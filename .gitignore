@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+.env.*
+venv/
+.venv/
+*.egg-info/
+
+# FastAPI / Testing
+*.log
+logs/
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Database
+*.sqlite
+*.sqlite3
+db_data/
+
+# Secrets
+*.pem
+*.key
+*.crt
+secrets/
+certs/
+
+# Frontend
+node_modules/
+dist/
+build/
+.next/
+.dart_tool/
+.flutter-plugins*
+.pub-cache/
+
+# IoT / ESP32
+.pio/
+.pioenvs/
+.piolibdeps/
+sdkconfig*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temp
+.tmp/
+.cache/
