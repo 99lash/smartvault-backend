@@ -2,7 +2,10 @@
 
 ## Project Purpose
 
-To turn a working prototype into a stable, secure, and evolvable system by fixing architectural shortcuts that will break under real usage.
+This repository contains the backend service for the Smart Vault system.
+
+Its purpose is to evolve a working prototype into a stable, secure, and maintainable backend by correcting architectural shortcuts that would not scale under real-world usage. The refactor prioritizes clear boundaries, explicit behavior, and long-term safety over short-term speed.
+
 
 ## Project Structure
 
