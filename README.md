@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-The SmartVault API is designed to provide a secure and scalable backend for managing digital vaults, user authentication, and biometric data. It enables users to securely store, access, and manage sensitive information while ensuring robust security measures and seamless integration with biometric authentication systems.
+To turn a working prototype into a stable, secure, and evolvable system by fixing architectural shortcuts that will break under real usage.
 
 ## Project Structure
 
@@ -140,6 +140,3 @@ For detailed documentation on each component, refer to the README files in the r
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 
-uvicorn app.main:app --reload
-
-http://localhost:8000/api/v1/health
