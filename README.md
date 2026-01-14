@@ -138,3 +138,8 @@ For detailed documentation on each component, refer to the README files in the r
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+
+uvicorn app.main:app --reload
+
+http://localhost:8000/api/v1/health
