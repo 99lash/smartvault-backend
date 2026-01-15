@@ -7,3 +7,15 @@ class VaultStatusResponse(BaseModel):
     vault_id: str
     status: VaultStatus
     last_seen_at: datetime | None
+
+
+class ProvisionVaultRequest(BaseModel):
+    hardware_uuid: str
+    nickname: str | None = None
+
+
+class ProvisionVaultResponse(BaseModel):
+    vault_id: str
+    hardware_uuid: str
+    nickname: str | None
+    status: VaultStatus
