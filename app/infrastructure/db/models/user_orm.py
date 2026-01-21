@@ -1,1 +1,1 @@
-# user_orm.py
+# Placeholder: User ORM model will be added when persistence is implemented for users.
