@@ -53,5 +53,9 @@ Thumbs.db
 .tmp/
 .cache/
 
+
+# environment files
+.env
+
 # Personal
 personalize.md

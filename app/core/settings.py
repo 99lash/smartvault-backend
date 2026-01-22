@@ -6,5 +6,12 @@ class Settings(BaseSettings):
     environment: str = "development"
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/smartvault"
 
+    DATABASE_URL: str = (
+        "postgresql+psycopg://postgres:postgres@localhost:5432/smartvault"
+    )
+
+    class Config:
+        env_file = ".env"
+
 
 settings = Settings()

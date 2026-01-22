@@ -26,6 +26,7 @@ def upgrade() -> None:
             "updated_at",
             sa.DateTime(timezone=True),
             server_default=sa.func.now(),
+            onupdate=sa.func.now(),
             nullable=False,
         ),
         sa.UniqueConstraint("hardware_uuid", name="uq_vaults_hardware_uuid"),
