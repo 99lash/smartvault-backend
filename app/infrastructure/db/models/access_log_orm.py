@@ -1,1 +1,1 @@
-# access_log_orm.py
+# Placeholder: AccessLog ORM model will be added when persistence is implemented for access logs.
