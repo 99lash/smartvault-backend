@@ -11,11 +11,11 @@ class VaultStatusResponse(BaseModel):
 
 class ProvisionVaultRequest(BaseModel):
     hardware_uuid: str
-    nickname: str | None = None
+    vault_name: str | None = None
 
 
 class ProvisionVaultResponse(BaseModel):
     vault_id: str
     hardware_uuid: str
-    nickname: str | None
+    vault_name: str | None
     status: VaultStatus
