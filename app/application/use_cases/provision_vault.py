@@ -24,18 +24,21 @@ class ProvisionVault:
         *,
         owner_id: str,
         hardware_uuid: str,
-        nickname: str | None,
+        vault_name: str | None,
     ) -> ProvisionVaultResult:
+        # enforce one-hardware-one-vault
         if self._repo.get_by_hardware_uuid(hardware_uuid) is not None:
             raise HardwareAlreadyProvisioned
 
+        # create vault with hardware identity
         vault = Vault(
             id=f"vault_{uuid4()}",
             owner_id=owner_id,
             hardware_uuid=hardware_uuid,
-            nickname=nickname,
+            vault_name=vault_name,
             status=VaultStatus.LOCKED,
             last_seen_at=None,
         )
+
         created = self._repo.create(vault)
         return ProvisionVaultResult(vault=created)

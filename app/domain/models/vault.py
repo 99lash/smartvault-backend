@@ -7,6 +7,7 @@ from app.domain.value_objects.vault_status import VaultStatus
 class Vault:
     id: str
     owner_id: str
+    hardware_uuid: str
     vault_name: str | None
     status: VaultStatus
     last_seen_at: datetime | None = None

@@ -14,18 +14,19 @@ def test_vault_status_enum_values() -> None:
 def test_vault_is_frozen_dataclass() -> None:
     now = datetime.now(timezone.utc)
     vault = Vault(
-        id="vault-123",
-        owner_id="owner-1",
-        hardware_uuid="HW-123",
-        nickname="Bedroom Vault",
-        status=VaultStatus.LOCKED,
-        last_seen_at=now,
-    )
+    id="vault-123",
+    owner_id="owner-1",
+    hardware_uuid="HW-123",
+    vault_name="Bedroom Vault",
+    status=VaultStatus.LOCKED,
+    last_seen_at=now,
+)
+
 
     assert vault.id == "vault-123"
     assert vault.owner_id == "owner-1"
     assert vault.hardware_uuid == "HW-123"
-    assert vault.nickname == "Bedroom Vault"
+    assert vault.vault_name == "Bedroom Vault"
     assert vault.status is VaultStatus.LOCKED
     assert vault.last_seen_at == now
 
