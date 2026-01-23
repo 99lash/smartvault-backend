@@ -15,7 +15,7 @@ def _client_with_fresh_repo() -> TestClient:
 
 def test_provision_vault_success() -> None:
     client = _client_with_fresh_repo()
-    payload = {"hardware_uuid": "ESP32-ABC-123", "nickname": "Bedroom Vault"}
+    payload = {"hardware_uuid": "ESP32-ABC-123", "vault_name": "Bedroom Vault"}
 
     try:
         response = client.post("/api/v1/vaults/provision", json=payload)
@@ -25,7 +25,7 @@ def test_provision_vault_success() -> None:
         assert isinstance(body["vault_id"], str)
         assert body["vault_id"].startswith("vault_")
         assert body["hardware_uuid"] == payload["hardware_uuid"]
-        assert body["nickname"] == payload["nickname"]
+        assert body["vault_name"] == payload["vault_name"]
         assert body["status"] == "LOCKED"
     finally:
         app.dependency_overrides.clear()
@@ -33,7 +33,7 @@ def test_provision_vault_success() -> None:
 
 def test_provision_vault_conflict() -> None:
     client = _client_with_fresh_repo()
-    payload = {"hardware_uuid": "ESP32-DUPE-001", "nickname": None}
+    payload = {"hardware_uuid": "ESP32-DUPE-001", "vault_name": None}
 
     try:
         first = client.post("/api/v1/vaults/provision", json=payload)

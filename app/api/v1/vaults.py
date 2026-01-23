@@ -32,7 +32,7 @@ def provision_vault(
         result = use_case.execute(
             owner_id=owner_id,
             hardware_uuid=payload.hardware_uuid,
-            nickname=payload.nickname,
+            vault_name=payload.vault_name,
         )
     except HardwareAlreadyProvisioned:
         raise HTTPException(status_code=409, detail="Hardware already provisioned")
@@ -41,7 +41,7 @@ def provision_vault(
     return ProvisionVaultResponse(
         vault_id=v.id,
         hardware_uuid=v.hardware_uuid,
-        nickname=v.nickname,
+        vault_name=v.vault_name,
         status=v.status,
     )
 
