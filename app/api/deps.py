@@ -1,3 +1,5 @@
+# To organize and centralize dependencies, preventing clutter in the router files.
+
 from app.infrastructure.db.repositories.in_memory_vault_repository import InMemoryVaultRepository
 
 _vault_repo = InMemoryVaultRepository()

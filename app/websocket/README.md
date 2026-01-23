@@ -1,19 +1,16 @@
 # WebSocket Documentation
 
-This document provides an overview of the key components in the `app/websocket` directory, explaining their roles and importance in the application's real-time communication capabilities.
+Quick reference for `app/websocket` components.
 
 ---
 
-## @/app/websocket/vault_socket.py
+## `vault_socket.py` - Real-Time Vault Communication
 
-### What does this file do?
-The `vault_socket.py` file manages WebSocket connections for real-time communication related to vault operations. It provides utilities for handling WebSocket events, such as connection establishment, message handling, and disconnection.
+**Purpose**: Manages WebSocket connections for vault operations.
 
-### Role
-- **Real-Time Communication**: Centralizes the logic for managing WebSocket connections, ensuring that real-time communication is handled consistently and efficiently.
-- **Event Handling**: Provides utilities for handling WebSocket events, such as connection establishment, message handling, and disconnection.
+**Features**:
+- Connection establishment and lifecycle management
+- Real-time message handling
+- Event broadcasting for vault updates
 
-### Why is it important?
-- **Real-Time Updates**: Enables real-time updates and notifications for vault operations, improving the responsiveness and user experience of the application.
-- **Scalability**: Enhances the scalability of the application by enabling real-time communication and reducing the need for polling.
-- **Consistency**: Ensures that WebSocket connections are managed uniformly across the application, reducing the risk of inconsistencies.
+**Why It Matters**: Enables live updates without polling, improves responsiveness and scalability.

@@ -1,4 +1,8 @@
-from __future__ import annotations
+# this code = instructions for how Alembic should run migrations.
+# Offline → generate SQL, no DB connection.
+# Online → connect and apply migrations.
+
+from __future__ import annotations # prevent forward referencing - Sometimes you want to refer to a class or type before it’s defined.
 
 import sys
 from logging.config import fileConfig
@@ -23,6 +27,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+
     url = str(settings.DATABASE_URL)
     context.configure(
         url=url,
@@ -38,6 +43,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
