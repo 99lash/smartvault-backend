@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import get_current_user_id, get_vault_repo
-from app.application.services.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.get_vault_status import GetVaultStatus
 from app.application.use_cases.provision_vault import (
     HardwareAlreadyProvisioned,

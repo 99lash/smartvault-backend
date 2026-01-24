@@ -1,16 +1,24 @@
-from collections.abc import Generator
+from functools import lru_cache
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
-from app.core.settings import settings
-
-
-engine = create_engine(settings.DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+from app.core.settings import Settings
 
 
-def get_db_session() -> Generator[Session, None, None]:
+@lru_cache
+def _get_engine():
+    settings = Settings()
+    return create_engine(settings.DATABASE_URL)
+
+
+@lru_cache
+def _get_sessionmaker():
+    return sessionmaker(bind=_get_engine(), autocommit=False, autoflush=False)
+
+
+def get_db():
+    SessionLocal = _get_sessionmaker()
     db = SessionLocal()
     try:
         yield db

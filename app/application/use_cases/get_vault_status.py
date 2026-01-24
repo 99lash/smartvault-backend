@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from app.application.services.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository
 from app.domain.models.vault import Vault
 
 
