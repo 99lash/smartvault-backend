@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.application.services.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository
 from app.infrastructure.db.models.vault_orm import VaultORM
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus

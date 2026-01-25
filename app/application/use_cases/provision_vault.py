@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
-from app.application.services.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
 
