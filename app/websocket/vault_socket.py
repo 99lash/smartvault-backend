@@ -23,4 +23,6 @@ async def websocket_endpoint(
             # Even if they say nothing, this keeps the connection alive.
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(websocket, user_id)
