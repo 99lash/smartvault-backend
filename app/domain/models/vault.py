@@ -11,3 +11,20 @@ class Vault:
     vault_name: str | None
     status: VaultStatus
     last_seen_at: datetime | None = None
+     
+    @staticmethod
+    def provisioned(
+        *,
+        id: str,
+        owner_id: str,
+        hardware_uuid: str,
+        vault_name: str | None,
+    ) -> "Vault":
+        return Vault(
+            id=id,
+            owner_id=owner_id,
+            hardware_uuid=hardware_uuid,
+            vault_name=vault_name,
+            status=VaultStatus.LOCKED,
+            last_seen_at=None,
+        )
