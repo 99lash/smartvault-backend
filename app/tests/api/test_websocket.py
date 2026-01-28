@@ -6,20 +6,19 @@ from app.main import app
 client = TestClient(app)
 
 def test_websocket_connection_success():
-    
-    # Test that we can connect when we provide the required 'user_id'.
-    
-    with client.websocket_connect("/api/v1/ws?user_id=test-user-123") as websocket:
+    """
+    Test that we can connect. 
+    Note: 'user_id' is now injected by the dependency, so we don't need to send it in the URL.
+    """
+    with client.websocket_connect("/api/v1/ws") as websocket:
         websocket.send_text("Ping")
-        # If the code reaches here without crashing, the connection succeeded.
         assert True
 
-def test_websocket_requires_user_id():
-    
-    # Test that the server rejects connection attempts missing the 'user_id'.
-    
-    # When the handshake fails (due to missing 422 param), 
-    # TestClient raises a WebSocketDisconnect error.
-    with pytest.raises(WebSocketDisconnect):
-        with client.websocket_connect("/api/v1/ws"):
-            pass
+def test_websocket_validates_dependency():
+    """
+    If we had real auth, we would test that invalid tokens fail here.
+    For now, since get_current_user_id always returns a user, 
+    we just verify the connection opens successfully.
+    """
+    with client.websocket_connect("/api/v1/ws") as websocket:
+        assert True

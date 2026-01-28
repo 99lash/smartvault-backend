@@ -1,5 +1,6 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.infrastructure.messaging.websocket_manager import manager
+from app.api.deps import get_current_user_id
 
 # This is the 'router' variable the error is complaining about!
 router = APIRouter()
@@ -7,7 +8,7 @@ router = APIRouter()
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    user_id: str = Query(...)
+    user_id: str = Depends(get_current_user_id),
 ):
     
     # Handles the WebSocket lifecycle:
