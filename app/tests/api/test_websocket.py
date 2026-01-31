@@ -1,11 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
-from app.main import app
 
-client = TestClient(app)
-
-def test_websocket_connection_success():
+def test_websocket_connection_success(client: TestClient):
     """
     Test that we can connect. 
     Note: 'user_id' is now injected by the dependency, so we don't need to send it in the URL.
@@ -14,7 +11,7 @@ def test_websocket_connection_success():
         websocket.send_text("Ping")
         assert True
 
-def test_websocket_validates_dependency():
+def test_websocket_validates_dependency(client: TestClient):
     """
     If we had real auth, we would test that invalid tokens fail here.
     For now, since get_current_user_id always returns a user, 
