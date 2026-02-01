@@ -8,7 +8,7 @@ def test_websocket_connection_success(client: TestClient):
     Note: 'user_id' is now injected by the dependency, so we don't need to send it in the URL.
     """
     with client.websocket_connect("/api/v1/ws") as websocket:
-        websocket.send_text("Ping")
+        websocket.send_text("Ping connection")
         assert True
 
 def test_websocket_validates_dependency(client: TestClient):
@@ -18,4 +18,5 @@ def test_websocket_validates_dependency(client: TestClient):
     we just verify the connection opens successfully.
     """
     with client.websocket_connect("/api/v1/ws") as websocket:
+        websocket.send_text("Ping dependency")
         assert True
