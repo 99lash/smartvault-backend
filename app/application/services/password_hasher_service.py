@@ -32,6 +32,9 @@ class PBKDF2PasswordHasher:
         )
 
     def verify(self, raw_password: str, encoded: str) -> bool:
+        if not isinstance(encoded, str):
+            return False
+
         try:
             scheme, iters_s, salt_b64, dk_b64 = encoded.split("$", 3)
             if scheme != "pbkdf2":
@@ -43,7 +46,9 @@ class PBKDF2PasswordHasher:
 
             salt = base64.urlsafe_b64decode(salt_b64.encode("ascii"))
             expected = base64.urlsafe_b64decode(dk_b64.encode("ascii"))
-        except (ValueError, TypeError, binascii.Error):
+            if not salt or not expected:
+                return False
+        except (ValueError, TypeError, AttributeError, binascii.Error):
             return False
 
         actual = hashlib.pbkdf2_hmac(
@@ -54,4 +59,3 @@ class PBKDF2PasswordHasher:
             dklen=len(expected),
         )
         return hmac.compare_digest(actual, expected)
-
