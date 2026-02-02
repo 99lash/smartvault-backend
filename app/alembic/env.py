@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]  # repo root
 sys.path.insert(0, str(BASE_DIR))
 
 from app.core.settings import settings  # noqa: E402
-from app.infrastructure.db.models import Base  # noqa: E402
+from app.infrastructure.db.models import Base
 
 config = context.config
 if config.config_file_name is not None:

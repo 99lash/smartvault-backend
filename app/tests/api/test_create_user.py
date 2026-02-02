@@ -32,10 +32,18 @@ def test_post_users_201():
 def test_post_users_409_duplicate():
     client = TestClient(app)
 
-    client.post("/api/v1/users", json={"email": "a@example.com", "password": "verylongpassword!"})
-    r = client.post("/api/v1/users", json={"email": "a@example.com", "password": "verylongpassword!"})
+    r1 = client.post(
+        "/api/v1/users",
+        json={"email": "a@example.com", "password": "verylongpassword!"},
+    )
+    assert r1.status_code == 201, r1.text
 
-    assert r.status_code == 409, r.text
+    r2 = client.post(
+        "/api/v1/users",
+        json={"email": "a@example.com", "password": "verylongpassword!"},
+    )
+    assert r2.status_code == 409, r2.text
+
 
 
 def test_post_users_422_invalid_payload():
