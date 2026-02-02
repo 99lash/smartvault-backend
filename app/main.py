@@ -5,24 +5,24 @@ from app.api.router import api_router
 from app.core.settings import settings
 from app.core.logging import setup_logging
 from app.infrastructure.messaging.websocket_manager import manager
+from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
+
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifespan manager.
-    Handles startup and shutdown tasks.
-    """
-    # Startup
     setup_logging()
+
+    await redis_startup()
     await manager.start()
     print("✅ WebSocket manager started")
 
     yield
 
-    # Shutdown
     await manager.stop()
+    await redis_shutdown()
     print("👋 WebSocket manager stopped")
+
 
 
 def create_app() -> FastAPI:

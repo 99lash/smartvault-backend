@@ -1,84 +1,122 @@
-# SmartVault API
+# SMRTVLT API
 
-**Purpose**: Transform a working prototype into a stable, secure, evolvable system.
+Backend API for SMRTVLT, built with FastAPI, PostgreSQL, Redis, and Docker. Designed using clean architecture (domain → application → infrastructure → API) with migration-driven schema management.
 
----
+## Tech Stack
 
-## Quick Start
+- **API:** FastAPI
+- **Database:** PostgreSQL 16
+- **Cache / OTP / Rate-limit:** Redis 7
+- **ORM:** SQLAlchemy
+- **Migrations:** Alembic
+- **Auth:** Password hashing (PBKDF2), OTP (planned)
+- **Infra:** Docker + Docker Compose
+- **DX:** Makefile helpers
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run application
-uvicorn app.main:app --reload
-
-# Access API at http://localhost:8000
-```
-
----
-
-## Current Features (MVP)
-
-**Endpoints**:
-- `GET /api/v1/health` - Service health check
-- `GET /api/v1/vaults/{vault_id}/status` - Vault status
-- `POST /api/v1/vaults/provision` - Vault provisioning
-
-**Architecture**:
-- Clean Architecture (domain, application, infrastructure layers)
-- Versioned REST API (`/api/v1`)
-- In-memory repositories (fast iteration)
-- CI-protected workflow
-
----
-
-## Project Structure
+## Project Structure (Simplified)
 
 ```
 app/
-├── main.py                  # FastAPI entry point
-├── api/                     # HTTP request handling
-│   ├── deps.py              # Dependency injection
-│   ├── router.py            # Routing logic
-│   └── v1/                  # API endpoints (auth, users, vaults, etc.)
-├── domain/                  # Business entities and logic
-│   ├── models/              # Core entities (user, vault, access_log)
-│   ├── value_objects/       # Immutable values (vault_status, biometric_result)
-│   └── events/              # Domain events
-├── application/             # Use cases and services
-│   ├── use_cases/           # Business workflows
-│   └── services/            # Shared utilities (tokens, auth, liveness)
-├── infrastructure/          # External integrations
-│   ├── db/                  # Database (sessions, repositories, ORM)
-│   ├── cache/               # Redis caching
-│   ├── messaging/           # WebSocket, event bus
-│   ├── notifications/       # Push notifications
-│   ├── security/            # Password hashing, rate limiting
-│   └── biometrics/          # Face recognition
-├── schemas/                 # Pydantic validation models
-├── websocket/               # WebSocket handlers
-├── core/                    # Config, settings, logging
-├── tests/                   # Test suites (api, application, domain)
-└── alembic/                 # Database migrations
+├── api/            # FastAPI routers & deps
+├── application/    # Use cases, ports, services
+├── domain/         # Domain models & value objects
+├── infrastructure/ # DB, cache, messaging, security
+├── schemas/        # Pydantic request/response models
+├── tests/          # Unit & API tests
+└── main.py         # App bootstrap
 ```
 
----
+## Getting Started (Local Dev)
 
-## Planned Features
+### Prerequisites
 
-- PostgreSQL persistence
-- Vault heartbeat tracking
-- WebSocket device connections
-- Biometric verification with liveness detection
-- PIN-based fallback
-- Ownership transfer
+- Docker + Docker Compose
+- Make
 
----
+### Start everything
 
-## Documentation
+```bash
+make dev
+```
 
-Detailed component docs: [`app/*/README.md`](app/)
+This will:
+- Build images
+- Start API, Postgres, Redis
+- Apply DB migrations
+- Print DB + Redis status
+
+API will be available at:
+
+```
+http://localhost:8000
+```
+
+## Common Commands (Makefile)
+Cheat sheet available in [`docker-commands.md`](docker-commands.md)
+
+### API / Docker
+
+```bash
+make up        # build & start services
+make logs      # tail API logs
+make stop      # stop services
+make down      # remove containers
+make test      # run pytest
+```
+
+### Database (Postgres + Alembic)
+Cheat sheet available in [`/app/infrastructure/README.md`](/app/infrastructure/README.md)
+
+```bash
+make migrate               # apply migrations
+make migration msg="..."   # create new migration
+make rollback              # downgrade last migration
+make psql                  # open psql shell
+make db-reset              # DEV ONLY: reset DB
+```
+
+### Cache (Redis)
+Cheat sheet available in [`/app/infrastructure/README.md`](/app/infrastructure/README.md)
+
+```bash
+make redis         # open Redis CLI
+make redis-info    # Redis server info
+make redis-flush   # DEV ONLY: flush Redis DB
+```
+
+## Migrations
+
+- Alembic is the source of truth for schema changes
+- Never edit tables manually in production
+- Always commit migrations with the feature that introduced them
+
+Cheat sheet available in [`/app/alembic/README.md`](/app/alembic/README.md)
+
+## Current Features
+
+- ✅ User creation (email + password)
+- ✅ Password hashing (PBKDF2)
+- ✅ DB-level uniqueness on users.email
+- ✅ API & application tests
+- 🔜 SMTP OTP email verification
+- 🔜 Rate limiting via Redis
+
+## Development Notes
+
+- This repo favors small vertical slices
+- Infrastructure & DX changes are kept separate from business features
+- All changes should be:
+  - migration-safe
+  - test-covered
+  - reversible (where applicable)
+
+## Environment Variables
+
+Loaded via `.env` (see `.env.example` when added):
+
+```bash
+DATABASE_URL=postgresql+psycopg://...
+REDIS_URL=redis://redis:6379/0
 
 ---
 
