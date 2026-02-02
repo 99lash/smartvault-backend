@@ -43,8 +43,8 @@ app = create_app()
 # Quick test endpoint to verify WebSocket works
 # ============================================
 
-@app.get("/")
-async def root():
+@app.get("/api")
+async def api_root():
     stats = manager.get_connection_stats()
     return {
         "message": "SmartVault API",

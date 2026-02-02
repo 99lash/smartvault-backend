@@ -1,15 +1,21 @@
-# collector/aggregator of all the endpoints so the main.py wont be cluttered with multiple endpoints
-
 from fastapi import APIRouter
-# HTTP IMPORTS
-from app.api.v1 import health, vaults
-# WEBSOCKET IMPORTS
+
+from app.api.v1 import health, vaults, users
 from app.websocket import vault_socket
 
-# HTTP
+# Root API router
 api_router = APIRouter()
-api_router.include_router(health.router, prefix="/v1")
-api_router.include_router(vaults.router, prefix="/v1")
 
-# WEBSOCKET
+# Versioned API router
+v1_router = APIRouter(prefix="/v1")
+
+# HTTP (v1)
+v1_router.include_router(health.router)
+v1_router.include_router(vaults.router)
+v1_router.include_router(users.router)
+
+# Attach v1 to root
+api_router.include_router(v1_router)
+
+# WEBSOCKET (versioned)
 api_router.include_router(vault_socket.router, prefix="/v1", tags=["websockets"])
