@@ -121,7 +121,7 @@ Loaded via `.env` (see `.env.example` when added):
 ```bash
 DATABASE_URL=postgresql+psycopg://...
 REDIS_URL=redis://redis:6379/0
-
+```
 ---
 
 ## License
