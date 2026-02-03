@@ -1,5 +1,9 @@
 SERVICE=api
 
+.PHONY: all clean
+all: dev
+clean: down
+
 # --- Alembic Helpers ---
 .PHONY: migration migrate rollback downgrade history current
 
