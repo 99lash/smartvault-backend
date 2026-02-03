@@ -92,6 +92,10 @@ make redis-flush   # DEV ONLY: flush Redis DB
 
 Cheat sheet available in [`/app/alembic/README.md`](/app/alembic/README.md)
 
+## All command cheat sheets
+- [`Docker`](docker-commands.md)
+- [`Postgres`](/app/infrastructure/README.md)
+
 ## Current Features
 
 - ✅ User creation (email + password)

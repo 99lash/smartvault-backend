@@ -102,3 +102,22 @@ dev: up migrate current db-info redis-info
 # DEV ONLY: reset DB + flush Redis + re-run migrations
 reset: db-reset redis-flush migrate current
 
+
+# --- Unit Test Helpers ---
+
+.PHONY: test-vv test-api test-app test-k
+
+test-vv:
+	docker compose exec api pytest -vv
+
+test-api:
+	docker compose exec api pytest app/tests/api -q
+
+test-app:
+	docker compose exec api pytest app/tests/application -q
+
+# Usage: make test-k k=create_user
+test-k:
+	@test "$(k)" || (echo "❌ k is required. Usage: make test-k k='pattern'"; exit 1)
+	docker compose exec api pytest -k "$(k)" -q
+
