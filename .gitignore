@@ -54,6 +54,8 @@ Thumbs.db
 .tmp/
 .cache/
 
+.git/
+
 # Personal
 personalize.md
 GEMINI.md

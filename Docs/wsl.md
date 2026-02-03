@@ -17,9 +17,20 @@ Step 3. Back in WSL, verify Docker works
 docker version
 docker compose version
 ```
-Step 4. Run your workflow again
+Step 4. Create a folder inside WSL:
 ```bash
-cd /mnt/d/SmartVault/api # /mnt/<drive letter>/<your folder where SMRTVLT API is located>/<project root directory>
+mkdir -p ~/projects
+```
+Step 5: Copy your repo into it
+```bash
+cp -r /mnt/d/SmartVault/api ~/projects/smartvault-api # /mnt/<drive letter>/<your folder where SMRTVLT API is located>/<project root directory>
+```
+Step 6: Go there
+```bash
+cd ~/projects/smartvault-api
+```
+Step 7. Run your workflow again
+```bash
 make dev
 ```
 
