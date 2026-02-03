@@ -94,7 +94,7 @@ Cheat sheet available in [`/app/alembic/README.md`](/app/alembic/README.md)
 
 ## All command cheat sheets
 - [`Docker`](docker-commands.md)
-- [`Postgres`](/app/infrastructure/README.md)
+- [`Postgres & Redis`](/app/infrastructure/README.md)
 
 ## Current Features
 
