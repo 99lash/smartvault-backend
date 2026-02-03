@@ -34,7 +34,9 @@ app/
 - Make
 
 ### Start everything
-
+- requirements: `git bash`, install `make` or `wsl` 
+- [`wsl setup instructions`](Docs/wsl.md)
+- if you don't like make commands here's the [`Default Docker Commands`](Docs/docker-commands.md)
 ```bash
 make dev
 ```
@@ -52,7 +54,7 @@ http://localhost:8000
 ```
 
 ## Common Commands (Makefile)
-Cheat sheet available in [`docker-commands.md`](docker-commands.md)
+Cheat sheet available in [`docker-commands.md`](Docs/docker-commands.md)
 
 ### API / Docker
 
@@ -65,7 +67,7 @@ make test      # run pytest
 ```
 
 ### Database (Postgres + Alembic)
-Cheat sheet available in [`/app/infrastructure/README.md`](/app/infrastructure/README.md)
+Cheat sheet available in [`Postgres`](Docs/postgres.md) and [`Alembic`](Docs/alembic.md)
 
 ```bash
 make migrate               # apply migrations
@@ -76,7 +78,7 @@ make db-reset              # DEV ONLY: reset DB
 ```
 
 ### Cache (Redis)
-Cheat sheet available in [`/app/infrastructure/README.md`](/app/infrastructure/README.md)
+Cheat sheet available in [`redis`](Docs/redis.md)
 
 ```bash
 make redis         # open Redis CLI
@@ -90,11 +92,11 @@ make redis-flush   # DEV ONLY: flush Redis DB
 - Never edit tables manually in production
 - Always commit migrations with the feature that introduced them
 
-Cheat sheet available in [`/app/alembic/README.md`](/app/alembic/README.md)
 
 ## All command cheat sheets
-- [`Docker`](docker-commands.md)
-- [`Postgres`](/app/infrastructure/README.md)
+- [`redis`](Docs/docker-commands.md)
+- [`Postgres`](Docs/postgres.md)
+- [`Alembic`](Docs/alembic.md)
 
 ## Current Features
 
