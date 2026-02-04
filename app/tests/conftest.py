@@ -5,6 +5,7 @@ from typing import Generator
 from app.main import create_app
 from app.api.deps.vaults import get_vault_repo
 from app.api.deps.auth import get_email_service
+from app.core.settings import settings
 from app.infrastructure.db.repositories.in_memory_vault_repository import InMemoryVaultRepository
 from app.tests.fakes.email_service import CaptureEmailService
 from app.infrastructure.cache.redis_client import redis_shutdown
@@ -12,6 +13,7 @@ from app.infrastructure.cache.redis_client import redis_shutdown
 
 @pytest.fixture
 def app():
+    settings.DEV_AUTH_BYPASS = True
     return create_app()
 
 

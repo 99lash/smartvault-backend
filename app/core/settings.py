@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     app_name: str = 'Smart Vault API'
     environment: str = 'development'
+    DEV_AUTH_BYPASS: bool = False
     DATABASE_URL: str = 'postgresql+psycopg://postgres:postgres@localhost:5432/smartvault'
     REDIS_URL: str = 'redis://redis:6379/0'
 

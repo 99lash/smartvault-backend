@@ -13,7 +13,3 @@ def get_vault_repo(db: Session = Depends(get_db_session)) -> VaultRepository:
     if running_pytest():
         return _in_memory_vault_repo
     return SqlAlchemyVaultRepository(db)
-
-
-def get_current_user_id() -> str:
-    return "demo-user-1"
