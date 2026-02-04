@@ -2,15 +2,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.api import deps
+from app.api.deps.users import _in_memory_user_repo
 
 
 @pytest.fixture(autouse=True)
 def _clear_in_memory_user_repo():
     # prevents cross-test leakage because deps uses a singleton repo under pytest
-    deps._in_memory_user_repo.clear()
+    _in_memory_user_repo.clear()
     yield
-    deps._in_memory_user_repo.clear()
+    _in_memory_user_repo.clear()
 
 
 def test_post_users_201():

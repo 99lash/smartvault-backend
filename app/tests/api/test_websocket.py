@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.main import app
-from app.api.deps import get_current_user_id
+from app.api.deps.vaults import get_current_user_id
 from app.domain.value_objects.websocket_messages import MessageType
 
 
