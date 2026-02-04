@@ -38,7 +38,7 @@ async def test_verify_otp_consumes_once_atomically():
 async def test_wrong_otp_does_not_consume():
     svc = OTPTicketService()
     email = "wrong@example.com"
-    otp = (await svc.issue_otp(email)).otp
+    await svc.issue_otp(email)
 
     with pytest.raises(OTPInvalidError):
         await svc.verify_otp_and_issue_ticket(email, "000000")

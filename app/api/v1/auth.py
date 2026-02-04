@@ -30,7 +30,7 @@ async def verify_otp(
         ticket = await otp_svc.verify_otp_and_issue_ticket(payload.email, payload.otp)
         return OTPVerifyResponse(signup_ticket=ticket)
     except OTPInvalidError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
@@ -56,6 +56,6 @@ async def signup(
         return UserResponse.model_validate(user)
 
     except TicketInvalidError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
     except DuplicateEmailError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
