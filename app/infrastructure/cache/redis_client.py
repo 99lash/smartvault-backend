@@ -37,7 +37,7 @@ async def redis_shutdown() -> None:
     """
     global _redis
     if _redis is not None:
-        await _redis.close()
+        await _redis.aclose()
         _redis = None
 
 # --- helpers ---
