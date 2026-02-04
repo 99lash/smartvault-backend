@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import health, vaults, users
+from app.api.v1 import health, vaults, users, auth
 from app.websocket import vault_socket
 
 # Root API router
@@ -13,7 +13,7 @@ v1_router = APIRouter(prefix="/v1")
 v1_router.include_router(health.router)
 v1_router.include_router(vaults.router)
 v1_router.include_router(users.router)
-
+v1_router.include_router(auth.router)
 # Attach v1 to root
 api_router.include_router(v1_router)
 

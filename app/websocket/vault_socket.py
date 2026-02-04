@@ -17,7 +17,8 @@ from app.infrastructure.messaging.websocket_manager import manager
 from app.domain.value_objects.websocket_messages import MessageType
 from app.application.use_cases.process_vault_state_update import ProcessVaultStateUpdate
 from app.application.ports.vault_repository import VaultRepository
-from app.api.deps import get_vault_repo, get_current_user_id
+from app.api.deps.vaults import get_vault_repo
+from app.api.deps.common import get_current_user_id
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

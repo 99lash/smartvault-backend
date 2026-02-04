@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import get_create_user_uc
+from app.api.deps.users import get_create_user_uc
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
 from app.schemas.users import CreateUserRequest, UserResponse
 
