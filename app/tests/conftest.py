@@ -13,8 +13,13 @@ from app.infrastructure.cache.redis_client import redis_shutdown
 
 @pytest.fixture
 def app():
+    previous = settings.DEV_AUTH_BYPASS
     settings.DEV_AUTH_BYPASS = True
-    return create_app()
+    app = create_app()
+    try:
+        yield app
+    finally:
+        settings.DEV_AUTH_BYPASS = previous
 
 
 @pytest.fixture(autouse=True)
