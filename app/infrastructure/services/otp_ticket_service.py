@@ -8,8 +8,6 @@ from redis.exceptions import ResponseError
 from app.core.settings import settings
 from app.infrastructure.cache.redis_client import (
     get_redis,
-    redis_del,
-    redis_get,
     redis_setex,
 )
 
@@ -33,6 +31,18 @@ local current = redis.call('GET', KEYS[1])
 if not current then return nil end
 if current ~= ARGV[1] then return false end
 -- prefer GETDEL when available (Redis >= 6.2)
+local ok, val = pcall(redis.call, 'GETDEL', KEYS[1])
+if ok then
+  return val
+end
+redis.call('DEL', KEYS[1])
+return current
+"""
+
+    _TICKET_CONSUME_LUA = """
+local current = redis.call('GET', KEYS[1])
+if not current then return nil end
+if current ~= ARGV[1] then return false end
 local ok, val = pcall(redis.call, 'GETDEL', KEYS[1])
 if ok then
   return val
@@ -69,7 +79,23 @@ return current
             result = await redis.eval(self._OTP_CONSUME_LUA, 1, key, expected)
             return result
         except ResponseError:
-            # Fallback if EVAL is disabled: preserve behavior (non-atomic)
+            # Fallback if EVAL is disabled: best-effort match then delete
+            value = await redis.get(key)
+            if value is None:
+                return None
+            if value.decode("utf-8") != expected:
+                return False
+            await redis.delete(key)
+            return value
+
+    async def _consume_ticket_value(self, key: str, expected: str) -> bytes | None | bool:
+        """Atomically read-and-delete the signup ticket only when it matches expected email."""
+        redis = await get_redis()
+        try:
+            result = await redis.eval(self._TICKET_CONSUME_LUA, 1, key, expected)
+            return result
+        except ResponseError:
+            # Fallback if EVAL is disabled: best-effort match then delete
             value = await redis.get(key)
             if value is None:
                 return None
@@ -85,7 +111,6 @@ return current
         if result is None:
             raise OTPInvalidError("OTP expired or not found")
         if result is False or (isinstance(result, bytes) and result.decode("utf-8") != otp):
-            # If fallback path returned a value but it did not match, treat as invalid.
             raise OTPInvalidError("Invalid OTP")
 
         ticket = secrets.token_urlsafe(32)
@@ -98,12 +123,13 @@ return current
 
     async def consume_ticket(self, email: str, ticket: str) -> None:
         key = self._ticket_key(ticket)
-        stored = await redis_get(key)
-        if stored is None:
+        expected = email.lower()
+        result = await self._consume_ticket_value(key, expected)
+
+        if result is None:
             raise TicketInvalidError("Signup ticket expired or invalid")
 
-        if stored.decode("utf-8") != email.lower():
+        if result is False or (isinstance(result, bytes) and result.decode("utf-8") != expected):
             raise TicketInvalidError("Signup ticket does not match email")
 
-        # one-time: consume ticket
-        await redis_del(key)
+        # success path: ticket already deleted atomically
