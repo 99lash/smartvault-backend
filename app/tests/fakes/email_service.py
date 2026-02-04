@@ -8,7 +8,7 @@ from app.infrastructure.notifications.email_service import EmailService
 
 @dataclass
 class SentOTP:
-    email: str
+    to_email: str
     otp: str
 
 
@@ -20,9 +20,9 @@ class CaptureEmailService(EmailService):
         self.sent: list[SentOTP] = []
         self._latest_by_email: Dict[str, str] = {}
 
-    async def send_otp(self, email: str, otp: str) -> None:
-        self.sent.append(SentOTP(email=email, otp=otp))
-        self._latest_by_email[email] = otp
+    async def send_otp(self, to_email: str, otp: str) -> None:
+        self.sent.append(SentOTP(to_email=to_email, otp=otp))
+        self._latest_by_email[to_email] = otp
 
     def latest_otp_for(self, email: str) -> Optional[str]:
         return self._latest_by_email.get(email)
