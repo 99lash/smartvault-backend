@@ -1,13 +1,21 @@
 from app.core.settings import settings
+from redis import Redis
 from app.infrastructure.notifications.email_service import DevEmailService, EmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.application.services.token_service import TokenService
+from app.infrastructure.services.refresh_token_store import RedisRefreshTokenStore
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
 _rate_limiter = RateLimiter()
-_token_service = TokenService()
+
+def get_redis_client() -> Redis:
+    return Redis.from_url(settings.REDIS_URL, decode_responses=False)
+
+def get_refresh_token_store() -> RedisRefreshTokenStore:
+    redis = get_redis_client()
+    return RedisRefreshTokenStore(redis)
 
 def _build_email_service() -> EmailService:
     backend = settings.resolved_email_backend.lower()
@@ -42,4 +50,5 @@ def get_rate_limiter() -> RateLimiter:
     return _rate_limiter
 
 def get_token_service() -> TokenService:
-    return _token_service
+    store = get_refresh_token_store()
+    return TokenService(store)
