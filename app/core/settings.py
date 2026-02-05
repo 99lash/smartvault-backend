@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = 'redis://redis:6379/0'
     
     # Security
-    SECRET_KEY: str = "changethis_secret_key_in_production"
+    SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Email / SMTP
@@ -29,7 +29,8 @@ class Settings(BaseSettings):
     
     # Rate Limiting
     RATE_LIMIT_OTP_REQ_PER_MIN: int = 3
-
+    RATE_LIMIT_LOGIN_REQ_PER_MIN: int = 5
+    
     @property
     def resolved_email_backend(self) -> str:
         """Choose email backend based on explicit setting, environment, and SMTP availability."""

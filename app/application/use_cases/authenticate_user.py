@@ -20,6 +20,9 @@ class InvalidCredentialsError(Exception):
     pass
 
 class AuthenticateUser:
+    
+    _DUMMY_HASH = "pbkdf2$210000$ZHJleHlsbA$Gw2y/k6e/sI2Z1k0LgJq3l5e8X7f5b1c"
+    
     def __init__(self, repo: UserRepository, hasher: PasswordHasher):
         self._repo = repo
         self._hasher = hasher
@@ -29,6 +32,7 @@ class AuthenticateUser:
         if not user:
             # Timing attack mitigation (verify a fake hash)? 
             # For now, simple return to avoid complexity over-engineering
+            self._hasher.verify(data.password, self._DUMMY_HASH)
             raise InvalidCredentialsError("Invalid email or password")
         
         if not self._hasher.verify(data.password, user.password_hash):

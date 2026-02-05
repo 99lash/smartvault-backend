@@ -70,10 +70,18 @@ async def signup(
 
 @router.post("/login", response_model=Token)
 async def login(
+    request: Request,
     payload: LoginRequest,
     uc: AuthenticateUser = Depends(get_authenticate_user_uc),
     token_svc: TokenService = Depends(get_token_service),
+    limiter: RateLimiter = Depends(get_rate_limiter),
 ) -> Token:
+    client_ip = request.client.host if request.client else "unknown"
+    await limiter.allow_request(
+        key=f"login_req:{client_ip}",
+        limit=settings.RATE_LIMIT_LOGIN_REQ_PER_MIN,
+        window_seconds=60
+    )
     try:
         user = await run_in_threadpool(
             uc.execute,
