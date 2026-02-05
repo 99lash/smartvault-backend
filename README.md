@@ -94,9 +94,10 @@ make redis-flush   # DEV ONLY: flush Redis DB
 
 
 ## All command cheat sheets
-- [`redis`](Docs/docker-commands.md)
+- [`Docker`](Docs/docker-commands.md)
 - [`Postgres`](Docs/postgres.md)
 - [`Alembic`](Docs/alembic.md)
+- [`Redis`](Docs/redis.md)
 
 ## Current Features
 
