@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.api.deps.users import get_create_user_uc, get_authenticate_user_uc
-# This import is correct HERE (in the router), but NOT in deps/auth.py
 from app.api.deps.auth import get_email_service, get_otp_ticket_service, get_rate_limiter, get_token_service
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
 from app.application.use_cases.authenticate_user import AuthenticateUser, LoginInput, InvalidCredentialsError
@@ -13,11 +12,16 @@ from app.infrastructure.notifications.email_service import EmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService, OTPInvalidError, TicketInvalidError
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.core.settings import settings
-from app.schemas.auth import OTPRequest, OTPVerifyRequest, OTPVerifyResponse, SignupRequest, LoginRequest, Token
+# Updated imports
+from app.schemas.auth import (
+    OTPRequest, OTPVerifyRequest, OTPVerifyResponse, SignupRequest, 
+    LoginRequest, Token, RefreshRequest, LogoutRequest
+)
 from app.schemas.users import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# ... (Keep request-otp, verify-otp, signup unchanged) ...
 @router.post("/request-otp", status_code=status.HTTP_204_NO_CONTENT)
 async def request_otp(  
     request: Request,
@@ -68,6 +72,7 @@ async def signup(
     except DuplicateEmailError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
+# UPDATED LOGIN
 @router.post("/login", response_model=Token)
 async def login(
     request: Request,
@@ -82,14 +87,22 @@ async def login(
         limit=settings.RATE_LIMIT_LOGIN_REQ_PER_MIN,
         window_seconds=60
     )
+
     try:
         user = await run_in_threadpool(
             uc.execute,
             LoginInput(email=payload.email, password=payload.password)
         )
         
-        token = token_svc.create_access_token(subject=user.id)
-        return Token(access_token=token, token_type="bearer")
+        access_token = token_svc.create_access_token(subject=user.id)
+        refresh_token = token_svc.create_refresh_token(user_id=user.id)
+        
+        return Token(
+            access_token=access_token, 
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
         
     except InvalidCredentialsError:
         raise HTTPException(
@@ -97,3 +110,35 @@ async def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+# NEW: REFRESH ENDPOINT
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    payload: RefreshRequest,
+    token_svc: TokenService = Depends(get_token_service),
+) -> Token:
+    try:
+        # Atomic rotation
+        new_access, new_refresh, _ = token_svc.rotate_refresh_token(payload.refresh_token)
+        
+        return Token(
+            access_token=new_access,
+            refresh_token=new_refresh,
+            token_type="bearer",
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
+    except ValueError:
+        # 401 indicates invalid token (or reused)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+# NEW: LOGOUT ENDPOINT
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    payload: LogoutRequest,
+    token_svc: TokenService = Depends(get_token_service),
+) -> None:
+    token_svc.revoke_refresh_token(payload.refresh_token)
