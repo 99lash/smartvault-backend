@@ -2,14 +2,15 @@ from app.core.settings import settings
 from app.infrastructure.notifications.email_service import DevEmailService, EmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
 from app.infrastructure.security.rate_limiter import RateLimiter
+from app.application.services.token_service import TokenService
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
 _rate_limiter = RateLimiter()
+_token_service = TokenService()
 
 def _build_email_service() -> EmailService:
     backend = settings.resolved_email_backend.lower()
-
     if backend == "smtp":
         if not settings.SMTP_HOST:
             raise ValueError("SMTP_HOST must be set when EMAIL_BACKEND=smtp")
@@ -26,9 +27,7 @@ def _build_email_service() -> EmailService:
             from_name=settings.SMTP_FROM_NAME,
             use_tls=True,
         )
-
     return DevEmailService()
-
 
 def get_email_service() -> EmailService:
     global _email_service
@@ -36,10 +35,11 @@ def get_email_service() -> EmailService:
         _email_service = _build_email_service()
     return _email_service
 
-
 def get_otp_ticket_service() -> OTPTicketService:
     return _otp_ticket_service
 
-
 def get_rate_limiter() -> RateLimiter:
     return _rate_limiter
+
+def get_token_service() -> TokenService:
+    return _token_service
