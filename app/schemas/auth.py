@@ -17,3 +17,11 @@ class SignupRequest(BaseModel):
     password: str = Field(min_length=12, max_length=128)
     full_name: str | None = Field(default=None, max_length=200)
     signup_ticket: str = Field(min_length=20)  # token_urlsafe usually longer
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

@@ -3,14 +3,17 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from starlette.concurrency import run_in_threadpool
 
-from app.api.deps.users import get_create_user_uc
-from app.api.deps.auth import get_email_service, get_otp_ticket_service, get_rate_limiter
+from app.api.deps.users import get_create_user_uc, get_authenticate_user_uc
+# This import is correct HERE (in the router), but NOT in deps/auth.py
+from app.api.deps.auth import get_email_service, get_otp_ticket_service, get_rate_limiter, get_token_service
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
+from app.application.use_cases.authenticate_user import AuthenticateUser, LoginInput, InvalidCredentialsError
+from app.application.services.token_service import TokenService
 from app.infrastructure.notifications.email_service import EmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService, OTPInvalidError, TicketInvalidError
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.core.settings import settings
-from app.schemas.auth import OTPRequest, OTPVerifyRequest, OTPVerifyResponse, SignupRequest
+from app.schemas.auth import OTPRequest, OTPVerifyRequest, OTPVerifyResponse, SignupRequest, LoginRequest, Token
 from app.schemas.users import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -23,20 +26,13 @@ async def request_otp(
     email_svc: EmailService = Depends(get_email_service),
     limiter: RateLimiter = Depends(get_rate_limiter),
 ) -> None:
-    # 1. Rate Limiting (IP Based)
-    # Fallback to "unknown" if behind weird proxy, but usually client.host works
     client_ip = request.client.host if request.client else "unknown"
-    
     await limiter.allow_request(
         key=f"otp_req:{client_ip}",
         limit=settings.RATE_LIMIT_OTP_REQ_PER_MIN,
         window_seconds=60
     )
-
-    # 2. Issue OTP (Redis)
     result = await otp_svc.issue_otp(payload.email)
-    
-    # 3. Send Email (SMTP or Dev Log)
     await email_svc.send_otp(payload.email, result.otp)
 
 @router.post("/verify-otp", response_model=OTPVerifyResponse)
@@ -45,7 +41,6 @@ async def verify_otp(
     otp_svc: OTPTicketService = Depends(get_otp_ticket_service),
 ) -> OTPVerifyResponse:
     try:
-        # 1. Verify OTP & Issue One-Time Ticket
         ticket = await otp_svc.verify_otp_and_issue_ticket(payload.email, payload.otp)
         return OTPVerifyResponse(signup_ticket=ticket)
     except OTPInvalidError as e:
@@ -58,12 +53,7 @@ async def signup(
     uc: CreateUser = Depends(get_create_user_uc),
 ) -> UserResponse:
     try:
-        # 1. Consume Ticket (Atomic Check-and-Delete)
-        # This prevents Replay Attacks. The ticket is gone after this line.
         await otp_svc.consume_ticket(payload.email, payload.signup_ticket)
-
-        # 2. Create User (Non-Blocking)
-        # Offload Sync DB work to threadpool to keep event loop free
         user = await run_in_threadpool(
             uc.execute,
             CreateUserInput(
@@ -72,10 +62,30 @@ async def signup(
                 full_name=payload.full_name,
             )
         )
-
         return UserResponse.model_validate(user)
-
     except TicketInvalidError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
     except DuplicateEmailError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+@router.post("/login", response_model=Token)
+async def login(
+    payload: LoginRequest,
+    uc: AuthenticateUser = Depends(get_authenticate_user_uc),
+    token_svc: TokenService = Depends(get_token_service),
+) -> Token:
+    try:
+        user = await run_in_threadpool(
+            uc.execute,
+            LoginInput(email=payload.email, password=payload.password)
+        )
+        
+        token = token_svc.create_access_token(subject=user.id)
+        return Token(access_token=token, token_type="bearer")
+        
+    except InvalidCredentialsError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
