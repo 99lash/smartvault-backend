@@ -1,10 +1,11 @@
 from app.core.settings import settings
 from app.infrastructure.notifications.email_service import DevEmailService, EmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
+from app.infrastructure.security.rate_limiter import RateLimiter
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
-
+_rate_limiter = RateLimiter()
 
 def _build_email_service() -> EmailService:
     backend = settings.resolved_email_backend.lower()
@@ -38,3 +39,7 @@ def get_email_service() -> EmailService:
 
 def get_otp_ticket_service() -> OTPTicketService:
     return _otp_ticket_service
+
+
+def get_rate_limiter() -> RateLimiter:
+    return _rate_limiter

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.api.deps.users import get_create_user_uc
-from app.api.deps.auth import get_email_service, get_otp_ticket_service
+from app.api.deps.auth import get_email_service, get_otp_ticket_service, get_rate_limiter
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
 from app.infrastructure.notifications.email_service import EmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService, OTPInvalidError, TicketInvalidError
@@ -15,10 +15,6 @@ from app.schemas.users import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Dependency for RateLimiter (stateless)
-def get_rate_limiter() -> RateLimiter:
-    return RateLimiter()
-
 @router.post("/request-otp", status_code=status.HTTP_204_NO_CONTENT)
 async def request_otp(  
     request: Request,
@@ -27,8 +23,8 @@ async def request_otp(
     email_svc: EmailService = Depends(get_email_service),
     limiter: RateLimiter = Depends(get_rate_limiter),
 ) -> None:
-    # Rate Limit: IP Address
-    # Fallback to 'unknown' if client is None (unlikely in HTTP)
+    # 1. Rate Limiting (IP Based)
+    # Fallback to "unknown" if behind weird proxy, but usually client.host works
     client_ip = request.client.host if request.client else "unknown"
     
     await limiter.allow_request(
@@ -37,7 +33,10 @@ async def request_otp(
         window_seconds=60
     )
 
+    # 2. Issue OTP (Redis)
     result = await otp_svc.issue_otp(payload.email)
+    
+    # 3. Send Email (SMTP or Dev Log)
     await email_svc.send_otp(payload.email, result.otp)
 
 @router.post("/verify-otp", response_model=OTPVerifyResponse)
@@ -46,6 +45,7 @@ async def verify_otp(
     otp_svc: OTPTicketService = Depends(get_otp_ticket_service),
 ) -> OTPVerifyResponse:
     try:
+        # 1. Verify OTP & Issue One-Time Ticket
         ticket = await otp_svc.verify_otp_and_issue_ticket(payload.email, payload.otp)
         return OTPVerifyResponse(signup_ticket=ticket)
     except OTPInvalidError as e:
@@ -58,11 +58,12 @@ async def signup(
     uc: CreateUser = Depends(get_create_user_uc),
 ) -> UserResponse:
     try:
-        # 1) consume ticket first (one-time)
+        # 1. Consume Ticket (Atomic Check-and-Delete)
+        # This prevents Replay Attacks. The ticket is gone after this line.
         await otp_svc.consume_ticket(payload.email, payload.signup_ticket)
 
-        # 2) create user
-        # FIX: Offload sync work to threadpool (Previous Task)
+        # 2. Create User (Non-Blocking)
+        # Offload Sync DB work to threadpool to keep event loop free
         user = await run_in_threadpool(
             uc.execute,
             CreateUserInput(
@@ -72,7 +73,6 @@ async def signup(
             )
         )
 
-        # 3) map to response
         return UserResponse.model_validate(user)
 
     except TicketInvalidError as e:
