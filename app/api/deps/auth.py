@@ -5,10 +5,14 @@ from app.infrastructure.services.otp_ticket_service import OTPTicketService
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.application.services.token_service import TokenService
 from app.infrastructure.services.refresh_token_store import RedisRefreshTokenStore
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
 _rate_limiter = RateLimiter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def get_redis_client() -> Redis:
     return Redis.from_url(settings.REDIS_URL, decode_responses=False)
@@ -52,3 +56,23 @@ def get_rate_limiter() -> RateLimiter:
 def get_token_service() -> TokenService:
     store = get_refresh_token_store()
     return TokenService(store)
+
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
+    # 1. Test Bypass (Critical for acceptance criteria)
+    if settings.DEV_AUTH_BYPASS:
+        return "test-user-id"
+
+    # 2. JWT Verification
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return user_id
+    except JWTError:
+        raise credentials_exception
