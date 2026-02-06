@@ -38,3 +38,9 @@ class InMemoryVaultRepository(VaultRepository):
     def create(self, vault: Vault) -> Vault:
         self._vaults[vault.id] = vault
         return vault
+
+    def update(self, vault: Vault) -> Vault:
+        if vault.id not in self._vaults:
+            raise ValueError(f"Vault {vault.id} not found")
+        self._vaults[vault.id] = vault
+        return vault

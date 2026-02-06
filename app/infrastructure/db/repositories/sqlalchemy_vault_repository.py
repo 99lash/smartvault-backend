@@ -65,4 +65,27 @@ class SqlAlchemyVaultRepository(VaultRepository):
             last_seen_at=row.last_seen_at,
         )
 
+    def update(self, vault: Vault) -> Vault:
+        row = self._session.get(VaultORM, vault.id)
+        if row is None:
+            raise ValueError(f"Vault {vault.id} not found")
+
+        row.owner_id = vault.owner_id
+        row.hardware_uuid = vault.hardware_uuid
+        row.vault_name = vault.vault_name
+        row.status = vault.status.value
+        row.last_seen_at = vault.last_seen_at
+
+        self._session.commit()
+        self._session.refresh(row)
+
+        return Vault(
+            id=row.id,
+            owner_id=row.owner_id,
+            hardware_uuid=row.hardware_uuid,
+            vault_name=row.vault_name,
+            status=VaultStatus(row.status),
+            last_seen_at=row.last_seen_at,
+        )
+
 
