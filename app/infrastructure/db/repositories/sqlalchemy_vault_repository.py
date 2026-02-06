@@ -5,24 +5,42 @@ from app.infrastructure.db.models.vault_orm import VaultORM
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
 
+# lipat nalang sa use case or domain kung business rule error na.
+# ang tingin ko ngayon dito ay data integrity error kaya dito ko muna nilagay
+class InvalidVaultStatusError(Exception):
+    """Raised when the database contains an invalid vault status string."""
+    def __init__(self, vault_id: str, invalid_status: str):
+        self.vault_id = vault_id
+        self.invalid_status = invalid_status
+        super().__init__(f"Invalid status '{invalid_status}' for vault '{vault_id}'")
+
 
 class SqlAlchemyVaultRepository(VaultRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
-        
-    def get_by_id(self, vault_id: str) -> Vault | None:
-        row = self._session.get(VaultORM, vault_id)
-        if row is None:
-            return None
+
+    # private method; vault domain mapper
+    def _to_domain(self, row: VaultORM) -> Vault:
+        try:
+            status = VaultStatus(row.status)
+        except ValueError as e:
+            raise InvalidVaultStatusError(row.id, row.status) from e
 
         return Vault(
             id=row.id,
             owner_id=row.owner_id,
             hardware_uuid=row.hardware_uuid,
             vault_name=row.vault_name,
-            status=VaultStatus(row.status),
+            status=status,
             last_seen_at=row.last_seen_at,
         )
+        
+    def get_by_id(self, vault_id: str) -> Vault | None:
+        row = self._session.get(VaultORM, vault_id)
+        if row is None:
+            return None
+
+        return self._to_domain(row)
         
     def get_by_hardware_uuid(self, hardware_uuid: str) -> Vault | None:
         row = (
@@ -33,14 +51,7 @@ class SqlAlchemyVaultRepository(VaultRepository):
         if row is None:
             return None
 
-        return Vault(
-            id=row.id,
-            owner_id=row.owner_id,
-            hardware_uuid=row.hardware_uuid,
-            vault_name=row.vault_name,
-            status=VaultStatus(row.status),
-            last_seen_at=row.last_seen_at,
-        )
+        return self._to_domain(row)
         
     def create(self, vault: Vault) -> Vault:
         row = VaultORM(
@@ -56,13 +67,6 @@ class SqlAlchemyVaultRepository(VaultRepository):
         self._session.commit()
         self._session.refresh(row)
 
-        return Vault(
-            id=row.id,
-            owner_id=row.owner_id,
-            hardware_uuid=row.hardware_uuid,
-            vault_name=row.vault_name,
-            status=VaultStatus(row.status),
-            last_seen_at=row.last_seen_at,
-        )
+        return self._to_domain(row)
 
 
