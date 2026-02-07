@@ -45,3 +45,33 @@ class VaultNotFoundError(Exception):
     def __init__(self, vault_id: str):
         super().__init__(f"Vault {vault_id} not found")
         self.vault_id = vault_id
+
+
+class PINError(Exception):
+    """Base exception for PIN-related errors."""
+    pass
+
+
+class PINNotSetError(PINError):
+    """Raised when a PIN has not been configured for the vault."""
+    def __init__(self, vault_id: str):
+        super().__init__(f"PIN is not set for vault {vault_id}")
+        self.vault_id = vault_id
+
+
+class InvalidPINError(PINError):
+    """Raised when a PIN value violates business rules or does not match."""
+    def __init__(self, message: str = "Invalid PIN"):
+        super().__init__(message)
+        self.message = message
+
+
+class PINLockedOutError(PINError):
+    """Raised when PIN attempts are locked out due to too many failures."""
+    def __init__(self, vault_id: str, attempts_remaining: int | None = None):
+        detail = "PIN entry locked due to too many failed attempts"
+        if attempts_remaining is not None:
+            detail = f"{detail}; attempts remaining: {attempts_remaining}"
+        super().__init__(f"{detail} for vault {vault_id}")
+        self.vault_id = vault_id
+        self.attempts_remaining = attempts_remaining

@@ -11,6 +11,8 @@ class Vault:
     vault_name: str | None
     status: VaultStatus
     last_seen_at: datetime | None = None
+    pin_hash: str | None = None
+    pin_set_at: datetime | None = None
      
     @staticmethod
     def provisioned(
@@ -27,4 +29,6 @@ class Vault:
             vault_name=vault_name,
             status=VaultStatus.LOCKED,
             last_seen_at=None,
+            pin_hash=None,
+            pin_set_at=None,
         )

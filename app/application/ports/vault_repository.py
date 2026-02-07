@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
+
 from app.domain.models.vault import Vault
 
 
@@ -17,4 +19,12 @@ class VaultRepository(ABC):
 
     @abstractmethod
     def update(self, vault: Vault) -> Vault:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_pin(self, vault_id: str, pin_hash: str, pin_set_at: datetime) -> Vault:
+        """
+        Update the stored PIN hash and timestamp for a vault.
+        Returns the updated Vault.
+        """
         raise NotImplementedError

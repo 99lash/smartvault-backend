@@ -1,4 +1,6 @@
+from dataclasses import replace
 from datetime import datetime, timezone
+
 from app.application.ports.vault_repository import VaultRepository
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
@@ -44,3 +46,12 @@ class InMemoryVaultRepository(VaultRepository):
             raise ValueError(f"Vault {vault.id} not found")
         self._vaults[vault.id] = vault
         return vault
+
+    def update_pin(self, vault_id: str, pin_hash: str, pin_set_at: datetime) -> Vault:
+        vault = self._vaults.get(vault_id)
+        if vault is None:
+            raise ValueError(f"Vault {vault_id} not found")
+
+        updated = replace(vault, pin_hash=pin_hash, pin_set_at=pin_set_at)
+        self._vaults[vault_id] = updated
+        return updated

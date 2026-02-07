@@ -19,11 +19,11 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.application.ports.vault_repository import VaultRepository
+from app.application.ports.websocket_manager import WebSocketManagerPort
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.core.settings import settings
 from app.domain.exceptions import InsufficientPermissionsError, UnauthorizedVaultAccessError
 from app.domain.value_objects.websocket_messages import CommandAction, MessageType
-from app.infrastructure.messaging.websocket_manager import manager
 
 
 @dataclass
@@ -70,7 +70,8 @@ class SendUnlockCommand:
     def __init__(
         self,
         repo: VaultRepository,
-        check_access: CheckVaultAccess
+        check_access: CheckVaultAccess,
+        ws_manager: WebSocketManagerPort,
     ):
         """
         Initialize the use case with required dependencies.
@@ -78,9 +79,11 @@ class SendUnlockCommand:
         Args:
             repo: Repository to fetch vault data.
             check_access: Use case for authorization checks.
+            ws_manager: WebSocket manager for sending commands to vaults.
         """
         self._repo = repo
         self._check_access = check_access
+        self._ws_manager = ws_manager
 
     async def execute(
         self,
@@ -128,7 +131,7 @@ class SendUnlockCommand:
             )
 
         # Step 4: Verify vault is connected and can receive commands
-        if not manager.is_vault_online(vault_id):
+        if not await self._ws_manager.is_vault_online(vault_id):
             raise VaultOfflineError(
                 f"Vault {vault_id} is offline. Commands can only be sent "
                 "to connected devices."
@@ -162,7 +165,7 @@ class SendUnlockCommand:
         }
 
         try:
-            await manager.send_to_vault(vault_id, message)
+            await self._ws_manager.send_to_vault(vault_id, message)
             sent = True
         except Exception as e:
             raise VaultOfflineError(f"Failed to send command: {e}")
