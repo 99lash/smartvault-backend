@@ -19,3 +19,10 @@ class ProvisionVaultResponse(BaseModel):
     hardware_uuid: str
     vault_name: str | None
     status: VaultStatus
+
+
+class UnlockCommandResponse(BaseModel):
+    command_id: str
+    vault_id: str
+    expires_at: datetime
+    sent: bool

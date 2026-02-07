@@ -66,6 +66,13 @@ class SqlAlchemyUserRepository(UserRepository):
         orm = self._db.execute(stmt).scalar_one_or_none() # FIXED: uses self._db
         return self._to_domain(orm) if orm else None
 
+    def get_by_ids(self, user_ids: list[str]) -> dict[str, User]:
+        if not user_ids:
+            return {}
+        stmt = select(UserORM).where(UserORM.id.in_(user_ids))
+        orms = self._db.execute(stmt).scalars().all()
+        return {orm.id: self._to_domain(orm) for orm in orms}
+
     def update_profile(self, user_id: str, full_name: str | None) -> User | None:
         stmt = (
             update(UserORM)
