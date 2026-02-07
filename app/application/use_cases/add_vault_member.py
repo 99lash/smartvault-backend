@@ -95,6 +95,9 @@ class AddVaultMember:
             UnauthorizedVaultAccessError: If actor is not the owner.
             ValueError: If trying to add owner as a member.
         """
+        if not inp.target_user_id:
+            raise ValueError("Target user is required")
+
         # Step 1: Verify vault exists
         vault = self._vault_repo.get_by_id(inp.vault_id)
         if vault is None:
@@ -128,6 +131,8 @@ class AddVaultMember:
                 inp.target_user_id,
                 inp.role
             )
+            if updated is None:
+                raise RuntimeError("Authorization missing during role update")
             return AddVaultMemberResult(authorization=updated or existing)
 
         # Step 4b: Create new authorization

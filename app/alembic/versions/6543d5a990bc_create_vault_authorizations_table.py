@@ -23,11 +23,11 @@ def upgrade():
         sa.Column('vault_id', sa.String, nullable=False),
         sa.Column('user_id', sa.String, nullable=False),
         sa.Column('role', sa.String(20), nullable=False),
-        sa.Column('granted_by', sa.String, nullable=False),
+        sa.Column('granted_by', sa.String, nullable=True),
         sa.Column('granted_at', sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(['vault_id'], ['vaults.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['granted_by'], ['users.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['granted_by'], ['users.id'], ondelete='SET NULL'),
         sa.UniqueConstraint('vault_id', 'user_id', name='uq_vault_user'),
     )
 

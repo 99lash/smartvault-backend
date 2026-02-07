@@ -21,5 +21,9 @@ class UserRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_by_ids(self, user_ids: list[str]) -> dict[str, User]:
+        raise NotImplementedError
+
+    @abstractmethod
     def update_profile(self, user_id: str, full_name: str | None) -> User | None:
         raise NotImplementedError

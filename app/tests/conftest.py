@@ -2,14 +2,16 @@ import pytest
 from fastapi.testclient import TestClient
 from typing import Generator
 from dataclasses import replace
+from datetime import datetime, timezone
 
 from app.main import create_app
 from app.api.deps.vaults import get_vault_repo, get_vault_auth_repo, _in_memory_vault_auth_repo
 from app.api.deps.auth import get_email_service, get_rate_limiter, get_current_user_id as auth_get_current_user_id
-from app.api.deps.users import get_user_repo
+from app.api.deps.users import get_user_repo, get_current_user
 from app.core.settings import settings
 from app.infrastructure.db.repositories.in_memory_vault_repository import InMemoryVaultRepository
 from app.application.ports.user_repository import UserRepository
+from app.domain.models.user import User
 from app.tests.fakes.email_service import CaptureEmailService
 from app.infrastructure.cache.redis_client import redis_shutdown
 
@@ -65,6 +67,9 @@ class _FakeUserRepo(UserRepository):
     def get_by_id(self, user_id: str):
         return self._by_id.get(user_id)
 
+    def get_by_ids(self, user_ids: list[str]) -> dict[str, object]:
+        return {uid: user for uid, user in self._by_id.items() if uid in user_ids}
+
     def update_profile(self, user_id: str, full_name: str | None):
         user = self.get_by_id(user_id)
         if not user:
@@ -98,9 +103,19 @@ def capture_email_service(app) -> Generator[CaptureEmailService, None, None]:
 @pytest.fixture
 def user_repo(app) -> Generator[_FakeUserRepo, None, None]:
     repo = _FakeUserRepo()
+    test_user = User(
+        id="demo-user-1",
+        email="owner@example.com",
+        password_hash="test-hash",
+        full_name="Vault Owner",
+        created_at=datetime.now(timezone.utc),
+    )
+    repo.save(test_user)
     app.dependency_overrides[get_user_repo] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: test_user
     yield repo
     app.dependency_overrides.pop(get_user_repo, None)
+    app.dependency_overrides.pop(get_current_user, None)
     repo.clear()
 
 

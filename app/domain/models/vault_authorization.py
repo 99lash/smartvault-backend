@@ -17,5 +17,5 @@ class VaultAuthorization:
     vault_id: str
     user_id: str
     role: VaultRole
-    granted_by: str  # user_id of who granted access
+    granted_by: str | None  # user_id of who granted access
     granted_at: datetime

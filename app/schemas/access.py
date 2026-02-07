@@ -25,7 +25,7 @@ class MemberResponse(BaseModel):
     full_name: str | None
     role: VaultRoleEnum
     granted_at: datetime
-    granted_by: str
+    granted_by: str | None
 
     model_config = ConfigDict(from_attributes=True)
 

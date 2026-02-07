@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Optional
 
 from app.application.ports.user_repository import UserRepository
@@ -12,7 +13,9 @@ class InMemoryUserRepository(UserRepository):
         self._by_email: dict[str, User] = {}
 
     def save(self, user: User) -> None:
-        self._users[user.email] = user
+        email = user.email.strip().lower()
+        self._by_id[user.id] = user
+        self._by_email[email] = user
     
     def clear(self) -> None:
         self._by_id.clear()
@@ -28,10 +31,7 @@ class InMemoryUserRepository(UserRepository):
         return user
     
     def get_by_id(self, user_id: str) -> User | None:
-        for user in self._users.values():
-            if user.id == user_id:
-                return user
-        return None
+        return self._by_id.get(user_id)
 
     def update_profile(self, user_id: str, full_name: str | None) -> User | None:
         user = self.get_by_id(user_id)
@@ -42,3 +42,6 @@ class InMemoryUserRepository(UserRepository):
         updated_user = replace(user, full_name=full_name)
         self.save(updated_user)
         return updated_user
+
+    def get_by_ids(self, user_ids: list[str]) -> dict[str, User]:
+        return {uid: user for uid, user in self._by_id.items() if uid in user_ids}

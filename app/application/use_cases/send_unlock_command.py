@@ -14,7 +14,6 @@ Security Features:
 import hashlib
 import hmac
 import secrets
-import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -83,7 +82,7 @@ class SendUnlockCommand:
         self._repo = repo
         self._check_access = check_access
 
-    def execute(
+    async def execute(
         self,
         *,
         vault_id: str,
@@ -163,12 +162,9 @@ class SendUnlockCommand:
         }
 
         try:
-            # Fire-and-forget: send without waiting for acknowledgment
-            asyncio.create_task(manager.send_to_vault(vault_id, message))
+            await manager.send_to_vault(vault_id, message)
             sent = True
         except Exception as e:
-            # WebSocket send failed, but command was created
-            # This typically means the connection dropped
             raise VaultOfflineError(f"Failed to send command: {e}")
 
         # TODO: Step 8: Log command in activity audit trail
@@ -198,14 +194,16 @@ class SendUnlockCommand:
         """
         # Build canonical string from command fields
         # Order matters: must match vault device's verification logic
-        canonical = "".join([
-            command_data["command_id"],
-            command_data["action"],
-            command_data["vault_id"],
-            command_data["timestamp"],
-            command_data["expires_at"],
-            command_data["nonce"],
-        ])
+        canonical = "\n".join(
+            [
+                command_data["command_id"],
+                command_data["action"],
+                command_data["vault_id"],
+                command_data["timestamp"],
+                command_data["expires_at"],
+                command_data["nonce"],
+            ]
+        )
 
         # Generate HMAC-SHA256 signature using the command secret
         signature = hmac.new(

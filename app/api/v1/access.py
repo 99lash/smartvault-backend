@@ -17,6 +17,7 @@ from app.application.use_cases.remove_vault_member import RemoveVaultMember, Rem
 from app.domain.exceptions import (
     CannotRemoveOwnerError,
     InsufficientPermissionsError,
+    UserNotFoundError,
     UnauthorizedVaultAccessError,
     VaultNotFoundError,
 )
@@ -55,9 +56,13 @@ async def add_vault_member(
     )
 
     # Ensure target user exists for enrichment and validation
-    target_user = user_repo.get_by_id(payload.user_id)
-    if target_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    try:
+        target_user = await run_in_threadpool(user_repo.get_by_id, payload.user_id)
+        if target_user is None:
+            raise UserNotFoundError(payload.user_id)
+    except UserNotFoundError as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
     try:
         domain_role = VaultRole(payload.role.value)
@@ -83,14 +88,15 @@ async def add_vault_member(
             granted_by=auth.granted_by,
         )
 
-    except VaultNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except UnauthorizedVaultAccessError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except InsufficientPermissionsError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except (VaultNotFoundError, UserNotFoundError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     except ValueError as e:
         # e.g., attempting to add the owner as a member
+        print(f"Error: {e}")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
 
 
@@ -117,11 +123,14 @@ async def remove_vault_member(
                 target_user_id=user_id,
             ),
         )
-    except VaultNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except UnauthorizedVaultAccessError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except (VaultNotFoundError, UserNotFoundError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     except CannotRemoveOwnerError as e:
+        print(f"Error: {e}")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
 
 
@@ -138,35 +147,37 @@ async def list_vault_members(
     User must have access to the vault (owner or member).
     """
     try:
-        result = await run_in_threadpool(
-            uc.execute,
-            vault_id,
-            current_user_id,
-        )
+        result = await run_in_threadpool(uc.execute, vault_id, current_user_id)
 
-        members = []
-        for auth in result.members:
-            user = user_repo.get_by_id(auth.user_id)
-            if user is None:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User data inconsistency")
+        user_ids = [auth.user_id for auth in result.members]
+        users = await run_in_threadpool(user_repo.get_by_ids, user_ids)
 
-            members.append(
-                MemberResponse(
-                    user_id=auth.user_id,
-                    email=user.email,
-                    full_name=user.full_name,
-                    role=VaultRoleEnum(auth.role.value),
-                    granted_at=auth.granted_at,
-                    granted_by=auth.granted_by,
-                )
+        members = [
+            MemberResponse(
+                user_id=auth.user_id,
+                email=users[auth.user_id].email,
+                full_name=users[auth.user_id].full_name,
+                role=VaultRoleEnum(auth.role.value),
+                granted_at=auth.granted_at,
+                granted_by=auth.granted_by,
             )
+            for auth in result.members
+            if auth.user_id in users
+        ]
+
+        if len(members) != len(result.members):
+            missing_ids = set(user_ids) - set(users.keys())
+            print(f"Error: Missing user data for IDs: {', '.join(missing_ids)}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
         return MemberListResponse(
             vault_id=vault_id,
             members=members,
         )
 
-    except VaultNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except UnauthorizedVaultAccessError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except (VaultNotFoundError, UserNotFoundError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")

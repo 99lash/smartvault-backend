@@ -1,3 +1,3 @@
 ### The dependency flow
 
-![alt text](image.png)
+![Dependency flow diagram](image.png)

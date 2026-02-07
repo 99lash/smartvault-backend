@@ -14,7 +14,10 @@ class VaultAuthorizationORM(Base):
     vault_id: Mapped[str] = mapped_column(ForeignKey("vaults.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
-    granted_by: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    granted_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     vault = relationship("VaultORM", foreign_keys=[vault_id])

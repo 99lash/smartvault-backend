@@ -16,12 +16,12 @@ Backend API for SMRTVLT, built with FastAPI, PostgreSQL, Redis, and Docker. Desi
 - [Migrations](#migrations)
 - [All command cheat sheets](#all-command-cheat-sheets)
 - [Current Features](#current-features)
-  - [Authentication & Users](#🔐-authentication--users)
-  - [Vault Management](#🔒-vault-management)
-  - [Vault Membership](#👥-vault-membership)
-  - [Vault Unlocking](#🚪-vault-unlocking)
-  - [Security Features](#⏱️-security-features)
-  - [Quality Assurance](#🧪-quality-assurance)
+  - [Authentication & Users](#authentication--users)
+  - [Vault Management](#vault-management)
+  - [Vault Membership](#vault-membership)
+  - [Vault Unlocking](#vault-unlocking)
+  - [Security Features](#security-features)
+  - [Quality Assurance](#quality-assurance)
 - [Future Features](#future-features)
 - [Development Notes](#development-notes)
 - [Environment Variables](#environment-variables)
@@ -129,34 +129,34 @@ make redis-flush   # DEV ONLY: flush Redis DB
 
 ## Current Features
 
-### 🔐 Authentication & Users
+### Authentication & Users
 - ✅ User creation (email + password)
 - ✅ Password hashing (PBKDF2)
 - ✅ DB-level uniqueness on users.email
 - ⚠️ JWT token authentication (access + refresh) - partial integration
 - ⚠️ OTP verification (email) - infrastructure exists, needs endpoint integration
 
-### 🔒 Vault Management
+### Vault Management
 - ✅ Provision vault (register vault with hardware UUID)
 - ⚠️ Get vault status - access control added, may need refinement
 
-### 👥 Vault Membership
+### Vault Membership
 - ✅ Add vault members (ADMIN, MEMBER, VIEWER roles)
 - ✅ Remove vault members
 - ✅ List vault members
 - ✅ Check vault access permissions
 
-### 🚪 Vault Unlocking
+### Vault Unlocking
 - ⚠️ Unlock command dispatch via WebSocket - code exists, needs vault device integration
 - ⚠️ HMAC-SHA256 signed commands - code exists, needs full integration
 - ⚠️ Role-based unlock permissions - logic exists in use case
 
-### ⏱️ Security Features
+### Security Features
 - ✅ Rate limiting via Redis
 - ⚠️ Biometric enrollment (face recognition) - service exists, needs endpoint integration
 - ⚠️ Activity logging - domain events exist, needs full implementation
 
-### 🧪 Quality Assurance
+### Quality Assurance
 - ✅ API & application tests
 - ✅ In-memory repositories for fast testing
 
