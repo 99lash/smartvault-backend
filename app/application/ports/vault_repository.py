@@ -14,3 +14,7 @@ class VaultRepository(ABC):
     @abstractmethod
     def create(self, vault: Vault) -> Vault:
         raise NotImplementedError
+
+    @abstractmethod
+    def update(self, vault: Vault) -> Vault:
+        raise NotImplementedError
