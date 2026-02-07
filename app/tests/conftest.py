@@ -1,8 +1,12 @@
-import pytest
-from fastapi.testclient import TestClient
-from typing import Generator
+import socket
 from dataclasses import replace
 from datetime import datetime, timezone
+from typing import Generator
+
+import pytest
+from fastapi.testclient import TestClient
+
+from contextlib import asynccontextmanager
 
 from app.main import create_app
 from app.api.deps.vaults import get_vault_repo, get_vault_auth_repo, _in_memory_vault_auth_repo
@@ -20,20 +24,61 @@ from app.infrastructure.cache.redis_client import redis_shutdown
 def app():
     previous = settings.DEV_AUTH_BYPASS
     settings.DEV_AUTH_BYPASS = True
+    previous_redis_url = settings.REDIS_URL
+    settings.REDIS_URL = f"redis://{_detect_redis_host()}:6379/0"
+    # Skip expensive/external lifespan work (Redis, websocket manager) during tests
+    @asynccontextmanager
+    async def _noop_lifespan(_app):
+        yield
+
     app = create_app()
+    app.router.lifespan_context = _noop_lifespan
     try:
         app.dependency_overrides[auth_get_current_user_id] = lambda: "test-user-id"
         yield app
     finally:
         app.dependency_overrides.pop(auth_get_current_user_id, None)
         settings.DEV_AUTH_BYPASS = previous
+        settings.REDIS_URL = previous_redis_url
+
+
+def _detect_redis_host() -> str:
+    """
+    Determine Redis host usable in both host and container test environments.
+
+    Tries Docker service DNS name 'redis' first (works in container network).
+    Falls back to localhost (works when using forwarded port from host).
+    """
+    for host in ("redis", "localhost"):
+        try:
+            socket.getaddrinfo(host, 6379)
+            return host
+        except socket.gaierror:
+            continue
+    return "localhost"
+
+
+@pytest.fixture(autouse=True)
+def _force_test_redis_url():
+    """Ensure Redis URL points at reachable Redis for tests."""
+    previous = settings.REDIS_URL
+    host = _detect_redis_host()
+    settings.REDIS_URL = f"redis://{host}:6379/0"
+    yield
+    settings.REDIS_URL = previous
 
 
 @pytest.fixture(autouse=True)
 async def _reset_redis_singleton():
-    await redis_shutdown()
+    try:
+        await redis_shutdown()
+    except RuntimeError:
+        pass
     yield
-    await redis_shutdown()
+    try:
+        await redis_shutdown()
+    except RuntimeError:
+        pass
 
 
 @pytest.fixture(autouse=True)

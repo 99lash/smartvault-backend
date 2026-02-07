@@ -21,6 +21,7 @@ from typing import Dict, List, Set, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from redis.asyncio import Redis
 
+from app.application.ports.websocket_manager import WebSocketManagerPort
 from app.domain.value_objects.websocket_messages import MessageType, WebSocketMessage
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class ConnectionType:
     VAULT = "vault"
 
 
-class WebSocketManager:
+class WebSocketManager(WebSocketManagerPort):
     """
     Manages WebSocket connections with support for:
     - Multiple user connections (same user, different devices)

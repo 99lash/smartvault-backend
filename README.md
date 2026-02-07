@@ -147,9 +147,12 @@ make redis-flush   # DEV ONLY: flush Redis DB
 - ✅ Check vault access permissions
 
 ### Vault Unlocking
+- ✅ PIN-based unlock (one PIN per vault)
+- ✅ Rate limiting (5 attempts per 15min, auto-lockout)
+- ✅ PIN hash storage (PBKDF2, never retrievable after creation)
 - ⚠️ Unlock command dispatch via WebSocket - code exists, needs vault device integration
 - ⚠️ HMAC-SHA256 signed commands - code exists, needs full integration
-- ⚠️ Role-based unlock permissions - logic exists in use case
+- ✅ Role-based unlock permissions (ADMIN/MEMBER can unlock, VIEWER cannot)
 
 ### Security Features
 - ✅ Rate limiting via Redis
@@ -159,6 +162,16 @@ make redis-flush   # DEV ONLY: flush Redis DB
 ### Quality Assurance
 - ✅ API & application tests
 - ✅ In-memory repositories for fast testing
+
+## Architectural Sign-Off
+This concludes the backend implementation of the **PIN Management** feature. The architecture now supports:
+
+* **Domain**: `PIN` value object  and `Vault` PIN metadata.
+* **Application**: Use cases for Setting, Removing, and Unlocking with PINs.
+* **Infrastructure**: PBKDF2 hashing  and Redis-based rate limiting/lockout.
+* **API**: Secure endpoints for managing PINs.
+
+The next logical step would be **Phase 5: Hardware Integration**, where the `UnlockVaultWithPIN` use case (specifically step 8 "Send unlock command") is connected to the physical device via WebSockets/MQTT.
 
 ## Future Features
 - ❌ WebSocket vault command streaming

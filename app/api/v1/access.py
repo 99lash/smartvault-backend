@@ -97,7 +97,7 @@ async def add_vault_member(
     except ValueError as e:
         # e.g., attempting to add the owner as a member
         print(f"Error: {e}")
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
 
 
 @router.delete("/{vault_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -131,7 +131,7 @@ async def remove_vault_member(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     except CannotRemoveOwnerError as e:
         print(f"Error: {e}")
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
 
 
 @router.get("/{vault_id}/members", response_model=MemberListResponse)

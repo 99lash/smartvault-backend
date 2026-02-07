@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
 from app.application.ports.vault_repository import VaultRepository
@@ -33,6 +35,8 @@ class SqlAlchemyVaultRepository(VaultRepository):
             vault_name=row.vault_name,
             status=status,
             last_seen_at=row.last_seen_at,
+            pin_hash=row.pin_hash,
+            pin_set_at=row.pin_set_at,
         )
         
     def get_by_id(self, vault_id: str) -> Vault | None:
@@ -61,6 +65,8 @@ class SqlAlchemyVaultRepository(VaultRepository):
             vault_name=vault.vault_name,
             status=vault.status.value,
             last_seen_at=vault.last_seen_at,
+            pin_hash=vault.pin_hash,
+            pin_set_at=vault.pin_set_at,
         )
 
         self._session.add(row)
@@ -79,17 +85,25 @@ class SqlAlchemyVaultRepository(VaultRepository):
         row.vault_name = vault.vault_name
         row.status = vault.status.value
         row.last_seen_at = vault.last_seen_at
+        row.pin_hash = vault.pin_hash
+        row.pin_set_at = vault.pin_set_at
 
         self._session.commit()
         self._session.refresh(row)
 
-        return Vault(
-            id=row.id,
-            owner_id=row.owner_id,
-            hardware_uuid=row.hardware_uuid,
-            vault_name=row.vault_name,
-            status=VaultStatus(row.status),
-            last_seen_at=row.last_seen_at,
-        )
+        return self._to_domain(row)
+
+    def update_pin(self, vault_id: str, pin_hash: str, pin_set_at: datetime) -> Vault:
+        row = self._session.get(VaultORM, vault_id)
+        if row is None:
+            raise ValueError(f"Vault {vault_id} not found")
+
+        row.pin_hash = pin_hash
+        row.pin_set_at = pin_set_at
+
+        self._session.commit()
+        self._session.refresh(row)
+
+        return self._to_domain(row)
 
 

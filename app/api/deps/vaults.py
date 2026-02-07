@@ -2,13 +2,18 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps.common import get_db_session, running_pytest
+from app.application.ports.pin_attempt_tracker import PINAttemptTracker
+from app.application.ports.pin_hasher import PINHasher
 from app.application.ports.vault_authorization_repository import VaultAuthorizationRepository
 from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.add_vault_member import AddVaultMember
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.list_vault_members import ListVaultMembers
 from app.application.use_cases.remove_vault_member import RemoveVaultMember
+from app.application.use_cases.remove_vault_pin import RemoveVaultPIN
 from app.application.use_cases.send_unlock_command import SendUnlockCommand
+from app.application.use_cases.set_vault_pin import SetVaultPIN
+from app.application.use_cases.unlock_vault_with_pin import UnlockVaultWithPIN
 from app.infrastructure.db.repositories.in_memory_vault_authorization_repository import (
     InMemoryVaultAuthorizationRepository,
 )
@@ -17,9 +22,15 @@ from app.infrastructure.db.repositories.sqlalchemy_vault_authorization_repositor
     SqlAlchemyVaultAuthorizationRepository,
 )
 from app.infrastructure.db.repositories.sqlalchemy_vault_repository import SqlAlchemyVaultRepository
+from app.infrastructure.messaging.websocket_manager import WebSocketManager
+from app.infrastructure.security.pin_attempt_tracker import RedisPINAttemptTracker
+from app.infrastructure.security.pin_hasher import PBKDF2PINHasher
 
 _in_memory_vault_repo = InMemoryVaultRepository()
 _in_memory_vault_auth_repo = InMemoryVaultAuthorizationRepository()
+_pin_hasher = PBKDF2PINHasher()
+_pin_attempt_tracker = RedisPINAttemptTracker()
+_ws_manager = WebSocketManager()
 
 
 def get_vault_repo(db: Session = Depends(get_db_session)) -> VaultRepository:
@@ -72,4 +83,34 @@ def get_send_unlock_command_uc(
     return SendUnlockCommand(
         repo=vault_repo,
         check_access=check_access,
+        ws_manager=_ws_manager,
     )
+
+
+def get_pin_hasher() -> PINHasher:
+    return _pin_hasher
+
+
+def get_pin_attempt_tracker() -> PINAttemptTracker:
+    return _pin_attempt_tracker
+
+
+def get_set_vault_pin_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+    hasher: PINHasher = Depends(get_pin_hasher),
+) -> SetVaultPIN:
+    return SetVaultPIN(vault_repo, hasher)
+
+
+def get_remove_vault_pin_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+) -> RemoveVaultPIN:
+    return RemoveVaultPIN(vault_repo)
+
+
+def get_unlock_with_pin_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+    hasher: PINHasher = Depends(get_pin_hasher),
+    tracker: PINAttemptTracker = Depends(get_pin_attempt_tracker),
+) -> UnlockVaultWithPIN:
+    return UnlockVaultWithPIN(vault_repo, hasher, tracker)
