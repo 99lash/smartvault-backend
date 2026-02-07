@@ -2,31 +2,6 @@
 
 Backend API for SMRTVLT, built with FastAPI, PostgreSQL, Redis, and Docker. Designed using clean architecture (domain → application → infrastructure → API) with migration-driven schema management.
 
-## Table of Contents
-
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure-simplified)
-- [Getting Started (Local Dev)](#getting-started-local-dev)
-  - [Prerequisites](#prerequisites)
-  - [Start everything](#start-everything)
-- [Common Commands (Makefile)](#common-commands-makefile)
-  - [API / Docker](#api--docker)
-  - [Database (Postgres + Alembic)](#database-postgres--alembic)
-  - [Cache (Redis)](#cache-redis)
-- [Migrations](#migrations)
-- [All command cheat sheets](#all-command-cheat-sheets)
-- [Current Features](#current-features)
-  - [Authentication & Users](#authentication--users)
-  - [Vault Management](#vault-management)
-  - [Vault Membership](#vault-membership)
-  - [Vault Unlocking](#vault-unlocking)
-  - [Security Features](#security-features)
-  - [Quality Assurance](#quality-assurance)
-- [Future Features](#future-features)
-- [Development Notes](#development-notes)
-- [Environment Variables](#environment-variables)
-- [License](#license)
-
 ## Tech Stack
 
 - **API:** FastAPI
