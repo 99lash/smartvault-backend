@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
-from app.application.ports.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository, VaultAlreadyExistsError
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
 
@@ -36,6 +36,10 @@ class ProvisionVault:
             vault_name=vault_name,
         )
 
-        created = self._repo.create(vault)
+        try:
+            created = self._repo.create(vault)
+        except VaultAlreadyExistsError:
+            raise HardwareAlreadyProvisioned
+
         return ProvisionVaultResult(vault=created)
 
