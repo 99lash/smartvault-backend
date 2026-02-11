@@ -1,5 +1,3 @@
-import os
-
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
