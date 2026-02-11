@@ -19,6 +19,9 @@ from app.domain.models.user import User
 from app.tests.fakes.email_service import CaptureEmailService
 from app.infrastructure.cache.redis_client import redis_shutdown
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+
 
 @pytest.fixture
 def app():
@@ -40,6 +43,47 @@ def app():
         app.dependency_overrides.pop(auth_get_current_user_id, None)
         settings.DEV_AUTH_BYPASS = previous
         settings.REDIS_URL = previous_redis_url
+
+
+@pytest.fixture
+def clean_settings_class(request):
+    """
+    Create a Settings class that doesn't load from .env file or environment.
+    
+    Used for testing default values without environment interference.
+    
+    Clean Architecture Note:
+    - Reuses production Settings class structure (inherits from ProductionSettings)
+    - Only overrides configuration behavior for tests
+    - Uses pytest fixture finalizer to isolate from environment variables
+    - Auto-syncs when production Settings changes
+    """
+    import os
+    
+    # Clean Architecture: Isolate test environment by removing Sentry env vars
+    # This ensures tests run with default values, not CI/production values
+    _sentry_vars = {}
+    for key in list(os.environ.keys()):
+        if key.startswith("SENTRY_"):
+            _sentry_vars[key] = os.environ.pop(key)
+    
+    # Restore after test using pytest's request.finalizer
+    def _restore_sentry():
+        for key, value in _sentry_vars.items():
+            os.environ[key] = value
+    
+    request.addfinalizer(_restore_sentry)
+    
+    from app.core.settings import Settings as ProductionSettings
+    
+    class TestSettings(ProductionSettings):
+        """Test version of Settings that ignores external config."""
+        model_config = SettingsConfigDict(
+            env_file=None,  # Don't load .env
+            extra='ignore'
+        )
+    
+    return TestSettings
 
 
 def _detect_redis_host() -> str:

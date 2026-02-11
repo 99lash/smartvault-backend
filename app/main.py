@@ -4,10 +4,11 @@ from fastapi import FastAPI
 from app.api.router import api_router
 from app.core.settings import settings
 from app.core.logging import setup_logging
+from app.core.sentry import init_sentry
 from app.infrastructure.messaging.websocket_manager import manager
 from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
 
-
+init_sentry()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
