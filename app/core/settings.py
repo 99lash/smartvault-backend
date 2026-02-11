@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +31,32 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_OTP_REQ_PER_MIN: int = 3
     RATE_LIMIT_LOGIN_REQ_PER_MIN: int = 5
+    
+    # SENTRY ERROR TRACKING
+    SENTRY_DSN: str | None = Field(
+        None,
+        description="Sentry DSN for error tracking"
+    )
+    SENTRY_ENVIRONMENT: str = Field(
+        "development",
+        description="Environment name (development/staging/production)"
+    )
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(
+        0.1,
+        ge=0.0,
+        le=1.0,
+        description="Percentage of transactions to trace (0.0-1.0)"
+    )
+    SENTRY_PROFILES_SAMPLE_RATE: float = Field(
+        0.1,
+        ge=0.0,
+        le=1.0,
+        description="Percentage of transactions to profile (0.0-1.0)"
+    )
+    SENTRY_SEND_DEFAULT_PII: bool = Field(
+        False,
+        description="Whether to send personally identifiable information (KEEP FALSE)"
+    )
     
     @property
     def resolved_email_backend(self) -> str:
