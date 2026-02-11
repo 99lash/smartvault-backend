@@ -9,12 +9,17 @@ from fastapi.testclient import TestClient
 from contextlib import asynccontextmanager
 
 from app.main import create_app
-from app.api.deps.vaults import get_vault_repo, get_vault_auth_repo, _in_memory_vault_auth_repo
+from app.api.deps.vaults import get_vault_repo, get_vault_auth_repo
 from app.api.deps.auth import get_email_service, get_rate_limiter, get_current_user_id as auth_get_current_user_id
 from app.api.deps.users import get_user_repo, get_current_user
 from app.core.settings import settings
 from app.infrastructure.db.repositories.in_memory_vault_repository import InMemoryVaultRepository
+from app.infrastructure.db.repositories.in_memory_vault_authorization_repository import (
+    InMemoryVaultAuthorizationRepository,
+)
 from app.application.ports.user_repository import UserRepository
+
+_in_memory_vault_auth_repo = InMemoryVaultAuthorizationRepository()
 from app.domain.models.user import User
 from app.tests.fakes.email_service import CaptureEmailService
 from app.infrastructure.cache.redis_client import redis_shutdown
