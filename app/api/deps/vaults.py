@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps.common import get_db_session, running_pytest
+from app.api.deps.common import get_db_session
 from app.application.ports.pin_attempt_tracker import PINAttemptTracker
 from app.application.ports.pin_hasher import PINHasher
 from app.application.ports.vault_authorization_repository import VaultAuthorizationRepository
@@ -14,10 +14,6 @@ from app.application.use_cases.remove_vault_pin import RemoveVaultPIN
 from app.application.use_cases.send_unlock_command import SendUnlockCommand
 from app.application.use_cases.set_vault_pin import SetVaultPIN
 from app.application.use_cases.unlock_vault_with_pin import UnlockVaultWithPIN
-from app.infrastructure.db.repositories.in_memory_vault_authorization_repository import (
-    InMemoryVaultAuthorizationRepository,
-)
-from app.infrastructure.db.repositories.in_memory_vault_repository import InMemoryVaultRepository
 from app.infrastructure.db.repositories.sqlalchemy_vault_authorization_repository import (
     SqlAlchemyVaultAuthorizationRepository,
 )
@@ -26,16 +22,13 @@ from app.infrastructure.messaging.websocket_manager import WebSocketManager
 from app.infrastructure.security.pin_attempt_tracker import RedisPINAttemptTracker
 from app.infrastructure.security.pin_hasher import PBKDF2PINHasher
 
-_in_memory_vault_repo = InMemoryVaultRepository()
-_in_memory_vault_auth_repo = InMemoryVaultAuthorizationRepository()
 _pin_hasher = PBKDF2PINHasher()
 _pin_attempt_tracker = RedisPINAttemptTracker()
 _ws_manager = WebSocketManager()
 
 
 def get_vault_repo(db: Session = Depends(get_db_session)) -> VaultRepository:
-    if running_pytest():
-        return _in_memory_vault_repo
+    """Get vault repository."""
     return SqlAlchemyVaultRepository(db)
 
 
@@ -43,8 +36,6 @@ def get_vault_auth_repo(
     db: Session = Depends(get_db_session),
 ) -> VaultAuthorizationRepository:
     """Get vault authorization repository."""
-    if running_pytest():
-        return _in_memory_vault_auth_repo
     return SqlAlchemyVaultAuthorizationRepository(db)
 
 
