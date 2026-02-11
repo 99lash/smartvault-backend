@@ -1,24 +1,21 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps.common import get_current_user_id, get_db_session, running_pytest
+from app.api.deps.common import get_current_user_id, get_db_session
 from app.application.ports.user_repository import UserRepository
 from app.application.services.password_hasher_service import PBKDF2PasswordHasher
 from app.application.use_cases.create_user import CreateUser
 from app.application.use_cases.authenticate_user import AuthenticateUser
 from app.application.use_cases.get_me import GetMe
 from app.application.use_cases.update_me import UpdateMe
-from app.infrastructure.db.repositories.in_memory_user_repository import InMemoryUserRepository
 from app.infrastructure.db.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from app.domain.models.user import User
 
-_in_memory_user_repo = InMemoryUserRepository()
 _password_hasher = PBKDF2PasswordHasher()
 
 
 def get_user_repo(db: Session = Depends(get_db_session)) -> UserRepository:
-    if running_pytest():
-        return _in_memory_user_repo
+    """Get user repository."""
     return SqlAlchemyUserRepository(db)
 
 

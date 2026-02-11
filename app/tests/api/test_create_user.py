@@ -1,21 +1,7 @@
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-from app.api.deps.users import _in_memory_user_repo
+# import pytest
 
 
-@pytest.fixture(autouse=True)
-def _clear_in_memory_user_repo():
-    # prevents cross-test leakage because deps uses a singleton repo under pytest
-    _in_memory_user_repo.clear()
-    yield
-    _in_memory_user_repo.clear()
-
-
-def test_post_users_201():
-    client = TestClient(app)
-
+def test_post_users_201(client):
     r = client.post(
         "/api/v1/users",
         json={"email": "a@example.com", "password": "verylongpassword!", "full_name": "Alice"},
@@ -29,9 +15,7 @@ def test_post_users_201():
     assert "password_hash" not in body
 
 
-def test_post_users_409_duplicate():
-    client = TestClient(app)
-
+def test_post_users_409_duplicate(client):
     r1 = client.post(
         "/api/v1/users",
         json={"email": "a@example.com", "password": "verylongpassword!"},
@@ -46,9 +30,7 @@ def test_post_users_409_duplicate():
 
 
 
-def test_post_users_422_invalid_payload():
-    client = TestClient(app)
-
+def test_post_users_422_invalid_payload(client):
     # invalid email + short password
     r = client.post("/api/v1/users", json={"email": "not-an-email", "password": "short"})
 
