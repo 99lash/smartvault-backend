@@ -4,6 +4,11 @@ from datetime import datetime
 from app.domain.models.vault import Vault
 
 
+class VaultAlreadyExistsError(Exception):
+    """Raised when a vault with the same unique identifier already exists."""
+    pass
+
+
 class VaultRepository(ABC):
     @abstractmethod
     def get_by_id(self, vault_id: str) -> Vault | None:

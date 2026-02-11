@@ -1,7 +1,7 @@
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from app.application.ports.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository, VaultAlreadyExistsError
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
 
@@ -38,6 +38,12 @@ class InMemoryVaultRepository(VaultRepository):
         return None
 
     def create(self, vault: Vault) -> Vault:
+        if vault.id in self._vaults:
+            raise VaultAlreadyExistsError()
+        
+        if self.get_by_hardware_uuid(vault.hardware_uuid) is not None:
+            raise VaultAlreadyExistsError()
+
         self._vaults[vault.id] = vault
         return vault
 

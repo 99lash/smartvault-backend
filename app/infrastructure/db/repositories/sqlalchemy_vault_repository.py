@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from app.application.ports.vault_repository import VaultRepository
+from app.application.ports.vault_repository import VaultRepository, VaultAlreadyExistsError
 from app.infrastructure.db.models.vault_orm import VaultORM
 from app.domain.models.vault import Vault
 from app.domain.value_objects.vault_status import VaultStatus
@@ -70,7 +71,12 @@ class SqlAlchemyVaultRepository(VaultRepository):
         )
 
         self._session.add(row)
-        self._session.commit()
+        try:
+            self._session.commit()
+        except IntegrityError:
+            self._session.rollback()
+            raise VaultAlreadyExistsError()
+            
         self._session.refresh(row)
 
         return self._to_domain(row)
