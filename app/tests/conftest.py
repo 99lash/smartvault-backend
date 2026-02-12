@@ -128,6 +128,14 @@ class _FakeUserRepo(UserRepository):
         self.save(updated)
         return updated
 
+    def update_password(self, user_id: str, password_hash: str):
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+        updated = replace(user, password_hash=password_hash)
+        self.save(updated)
+        return updated
+
 
 class _NoopRateLimiter:
     async def allow_request(self, *args, **kwargs):
