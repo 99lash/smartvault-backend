@@ -8,7 +8,31 @@ from app.core.sentry import init_sentry
 from app.infrastructure.messaging.websocket_manager import manager
 from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
 
+from prometheus_fastapi_instrumentator import Instrumentator
+from app.infrastructure.monitoring.metrics import set_app_info
+
 init_sentry()
+
+# Create instrumentor once at module level to avoid duplicate metric registration
+_instrumentator = None
+
+def get_instrumentator() -> Instrumentator:
+    """Get or create the reusable Prometheus instrumentator."""
+    global _instrumentator
+    if _instrumentator is None:
+        _instrumentator = Instrumentator(
+            should_group_status_codes=True,
+            should_ignore_untemplated=False,
+            should_instrument_requests_inprogress=True,
+            excluded_handlers=[
+                "/metrics",
+                "/api/v1/health",
+                "/api/v1/health/detailed",
+                "/docs",
+                "/openapi.json",
+            ],
+        )
+    return _instrumentator
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +58,21 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router, prefix="/api")
+    
+    # Only instrument if not already done to avoid duplicate metrics
+    if not hasattr(app, "_instrumented"):
+        get_instrumentator().instrument(app).expose(
+            app,
+            endpoint="/metrics",
+            include_in_schema=False,
+        )
+        app._instrumented = True
+
+    set_app_info(
+        version=app.version,
+        environment=settings.environment,
+    )
+    
     return app
 
 
