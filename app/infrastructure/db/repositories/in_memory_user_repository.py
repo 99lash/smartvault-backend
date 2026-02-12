@@ -43,5 +43,14 @@ class InMemoryUserRepository(UserRepository):
         self.save(updated_user)
         return updated_user
 
+    def update_password(self, user_id: str, password_hash: str) -> User | None:
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+        
+        updated_user = replace(user, password_hash=password_hash)
+        self.save(updated_user)
+        return updated_user
+
     def get_by_ids(self, user_ids: list[str]) -> dict[str, User]:
         return {uid: user for uid, user in self._by_id.items() if uid in user_ids}
