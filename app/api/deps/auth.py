@@ -2,15 +2,19 @@ from app.core.settings import settings
 from redis import Redis
 from app.infrastructure.notifications.email_service import DevEmailService, EmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
+from app.infrastructure.services.password_reset_service import PasswordResetService
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.application.services.token_service import TokenService
+from app.application.use_cases.reset_password import RequestPasswordReset, ConfirmPasswordReset
 from app.infrastructure.services.refresh_token_store import RedisRefreshTokenStore
+from app.api.deps.users import get_user_repo, get_password_hasher
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
+_password_reset_service = PasswordResetService()
 _rate_limiter = RateLimiter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -50,12 +54,29 @@ def get_email_service() -> EmailService:
 def get_otp_ticket_service() -> OTPTicketService:
     return _otp_ticket_service
 
+def get_password_reset_service() -> PasswordResetService:
+    return _password_reset_service
+
 def get_rate_limiter() -> RateLimiter:
     return _rate_limiter
 
 def get_token_service() -> TokenService:
     store = get_refresh_token_store()
     return TokenService(store)
+
+def get_request_password_reset_uc(
+    repo=Depends(get_user_repo),
+    reset_svc=Depends(get_password_reset_service),
+    email_svc=Depends(get_email_service),
+) -> RequestPasswordReset:
+    return RequestPasswordReset(repo, reset_svc, email_svc)
+
+def get_confirm_password_reset_uc(
+    repo=Depends(get_user_repo),
+    reset_svc=Depends(get_password_reset_service),
+    hasher=Depends(get_password_hasher),
+) -> ConfirmPasswordReset:
+    return ConfirmPasswordReset(repo, reset_svc, hasher)
 
 def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
     # 1. Test Bypass (Critical for acceptance criteria)

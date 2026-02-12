@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.api.deps.users import get_create_user_uc, get_authenticate_user_uc
-from app.api.deps.auth import get_email_service, get_otp_ticket_service, get_rate_limiter, get_token_service
+from app.api.deps.auth import (
+    get_email_service, get_otp_ticket_service, get_rate_limiter, get_token_service,
+    get_request_password_reset_uc, get_confirm_password_reset_uc
+)
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
 from app.application.use_cases.authenticate_user import AuthenticateUser, LoginInput, InvalidCredentialsError
+from app.application.use_cases.reset_password import RequestPasswordReset, RequestPasswordResetInput, ConfirmPasswordReset, ConfirmPasswordResetInput
 from app.application.services.token_service import TokenService
 from app.infrastructure.notifications.email_service import EmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService, OTPInvalidError, TicketInvalidError
@@ -15,7 +19,8 @@ from app.core.settings import settings
 # Updated imports
 from app.schemas.auth import (
     OTPRequest, OTPVerifyRequest, OTPVerifyResponse, SignupRequest, 
-    LoginRequest, Token, RefreshRequest, LogoutRequest
+    LoginRequest, Token, RefreshRequest, LogoutRequest,
+    PasswordResetRequest, PasswordResetConfirm
 )
 from app.schemas.users import UserResponse
 
@@ -142,3 +147,26 @@ async def logout(
     token_svc: TokenService = Depends(get_token_service),
 ) -> None:
     token_svc.revoke_refresh_token(payload.refresh_token)
+
+# NEW: REQUEST PASSWORD RESET ENDPOINT
+@router.post("/request-password-reset", status_code=status.HTTP_204_NO_CONTENT)
+async def request_password_reset(
+    payload: PasswordResetRequest,
+    uc: RequestPasswordReset = Depends(get_request_password_reset_uc),
+) -> None:
+    await uc.execute(RequestPasswordResetInput(email=payload.email))
+
+
+# NEW: CONFIRM PASSWORD RESET ENDPOINT
+@router.post("/confirm-password-reset", status_code=status.HTTP_204_NO_CONTENT)
+async def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    uc: ConfirmPasswordReset = Depends(get_confirm_password_reset_uc),
+) -> None:
+    try:
+        await uc.execute(ConfirmPasswordResetInput(
+            token=payload.token,
+            new_password=payload.new_password,
+        ))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
