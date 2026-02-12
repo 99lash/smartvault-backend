@@ -59,6 +59,9 @@ class ConfirmPasswordReset:
         self._hasher = hasher
 
     async def execute(self, inp: ConfirmPasswordResetInput) -> None:
+        if len(inp.new_password) < 12:
+            raise ValueError("Password must be at least 12 characters")
+
         email = await self._reset_svc.consume_token(inp.token)
         if email is None:
             raise ValueError("Invalid or expired reset token")
@@ -68,8 +71,7 @@ class ConfirmPasswordReset:
             # Should not happen if token was issued for this email, but be safe
             raise ValueError("User no longer exists")
 
-        if len(inp.new_password) < 12:
-            raise ValueError("Password must be at least 12 characters")
-
         password_hash = self._hasher.hash(inp.new_password)
-        self._repo.update_password(user.id, password_hash)
+        updated = self._repo.update_password(user.id, password_hash)
+        if updated is None:
+            raise ValueError("Failed to update password")
