@@ -84,3 +84,15 @@ class SqlAlchemyUserRepository(UserRepository):
         updated_orm = result.scalar_one_or_none()
         self._db.flush()                # FIXED: uses self._db
         return self._to_domain(updated_orm) if updated_orm else None
+
+    def update_password(self, user_id: str, password_hash: str) -> User | None:
+        stmt = (
+            update(UserORM)
+            .where(UserORM.id == user_id)
+            .values(password_hash=password_hash)
+            .returning(UserORM)
+        )
+        result = self._db.execute(stmt)
+        updated_orm = result.scalar_one_or_none()
+        self._db.flush()
+        return self._to_domain(updated_orm) if updated_orm else None
