@@ -49,9 +49,15 @@ return current
                 return result.decode("utf-8")
             return result
         except ResponseError:
-            # Fallback if EVAL is disabled: best-effort match then delete
-            value = await redis.get(key)
+            # Fallback if EVAL is disabled: use GETDEL for atomicity
+            try:
+                value = await redis.getdel(key)
+            except (ResponseError, AttributeError):
+                # Redis < 6.2 or older redis-py: best-effort GET+DEL (not atomic)
+                value = await redis.get(key)
+                if value is not None:
+                    await redis.delete(key)
+            
             if value is None:
                 return None
-            await redis.delete(key)
             return value.decode("utf-8")
