@@ -24,6 +24,9 @@ from app.domain.models.user import User
 from app.tests.fakes.email_service import CaptureEmailService
 from app.infrastructure.cache.redis_client import redis_shutdown
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+
 
 @pytest.fixture
 def app():
@@ -45,6 +48,47 @@ def app():
         app.dependency_overrides.pop(auth_get_current_user_id, None)
         settings.DEV_AUTH_BYPASS = previous
         settings.REDIS_URL = previous_redis_url
+
+
+@pytest.fixture
+def clean_settings_class(request):
+    """
+    Create a Settings class that doesn't load from .env file or environment.
+    
+    Used for testing default values without environment interference.
+    
+    Clean Architecture Note:
+    - Reuses production Settings class structure (inherits from ProductionSettings)
+    - Only overrides configuration behavior for tests
+    - Uses pytest fixture finalizer to isolate from environment variables
+    - Auto-syncs when production Settings changes
+    """
+    import os
+    
+    # Clean Architecture: Isolate test environment by removing Sentry env vars
+    # This ensures tests run with default values, not CI/production values
+    _sentry_vars = {}
+    for key in list(os.environ.keys()):
+        if key.startswith("SENTRY_"):
+            _sentry_vars[key] = os.environ.pop(key)
+    
+    # Restore after test using pytest's request.finalizer
+    def _restore_sentry():
+        for key, value in _sentry_vars.items():
+            os.environ[key] = value
+    
+    request.addfinalizer(_restore_sentry)
+    
+    from app.core.settings import Settings as ProductionSettings
+    
+    class TestSettings(ProductionSettings):
+        """Test version of Settings that ignores external config."""
+        model_config = SettingsConfigDict(
+            env_file=None,  # Don't load .env
+            extra='ignore'
+        )
+    
+    return TestSettings
 
 
 def _detect_redis_host() -> str:
@@ -84,6 +128,34 @@ async def _reset_redis_singleton():
         await redis_shutdown()
     except RuntimeError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def _reset_prometheus_registry():
+    """Reset prometheus registry between tests to avoid duplicate metric errors."""
+    from prometheus_client import REGISTRY
+    
+    # Clear all collectors from the default registry
+    collectors_to_remove = list(REGISTRY._names_to_collectors.keys())
+    for name in collectors_to_remove:
+        try:
+            collector = REGISTRY._names_to_collectors.pop(name)
+            if name in REGISTRY._children:
+                REGISTRY._children.pop(name, None)
+        except (KeyError, AttributeError):
+            pass
+    
+    yield
+    
+    # Clean up again after test
+    collectors_to_remove = list(REGISTRY._names_to_collectors.keys())
+    for name in collectors_to_remove:
+        try:
+            collector = REGISTRY._names_to_collectors.pop(name)
+            if name in REGISTRY._children:
+                REGISTRY._children.pop(name, None)
+        except (KeyError, AttributeError):
+            pass
 
 
 @pytest.fixture(autouse=True)

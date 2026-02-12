@@ -9,6 +9,8 @@ from app.domain.exceptions import VaultNotFoundError
 from app.domain.models.vault import Vault
 from app.domain.value_objects.pin import PIN
 
+# Metrics import
+from app.infrastructure.monitoring.helpers import track_vault_pin_set
 
 @dataclass(frozen=True)
 class SetVaultPINInput:
@@ -36,4 +38,8 @@ class SetVaultPIN:
         now = datetime.now(timezone.utc)
 
         updated_vault = self._repo.update_pin(vault.id, hashed, now)
+        
+        # Track PIN set metric
+        track_vault_pin_set()
+        
         return SetVaultPINResult(vault=updated_vault)

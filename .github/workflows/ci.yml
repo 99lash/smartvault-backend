@@ -14,6 +14,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: smartvault
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d smartvault"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
       redis:
         image: redis:7
         ports:
@@ -25,8 +39,14 @@ jobs:
           --health-retries 20
 
     env:
+      # CI runs on host network; use localhost + published ports
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/smartvault
       REDIS_URL: redis://localhost:6379/0
+
+      # required by Settings/tests
       SECRET_KEY: super-secret-key-that-you-should-change-me
+      APP_ENV: development
+      DEBUG: "true"
 
     steps:
       - name: Checkout
