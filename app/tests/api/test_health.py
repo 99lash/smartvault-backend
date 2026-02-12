@@ -20,6 +20,8 @@ def test_health_detailed_all_dependencies_healthy(client, vault_repo):
     assert response.status_code == 200
     data = response.json()
     
+    print("HEALTH_DETAILED_RESPONSE:", data)
+    
     assert data["status"] == "healthy"
     assert len(data["dependencies"]) == 2
     
