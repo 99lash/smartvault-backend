@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # OTP + ticket
     OTP_TTL_SECONDS: int = 600          # 10 min
     SIGNUP_TICKET_TTL_SECONDS: int = 300 # 5 min
+    PASSWORD_RESET_TTL_SECONDS: int = 900 # 15 min
     
     # Rate Limiting
     RATE_LIMIT_OTP_REQ_PER_MIN: int = 3
