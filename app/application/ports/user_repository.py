@@ -27,3 +27,7 @@ class UserRepository(ABC):
     @abstractmethod
     def update_profile(self, user_id: str, full_name: str | None) -> User | None:
         raise NotImplementedError
+
+    @abstractmethod
+    def update_password(self, user_id: str, password_hash: str) -> User | None:
+        raise NotImplementedError
