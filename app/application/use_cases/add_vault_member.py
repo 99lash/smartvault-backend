@@ -20,6 +20,9 @@ from app.domain.exceptions import (
 from app.domain.models.vault_authorization import VaultAuthorization
 from app.domain.value_objects.vault_role import VaultRole
 
+# Metrics import
+from app.infrastructure.monitoring.helpers import track_vault_member_added
+
 
 @dataclass(frozen=True)
 class AddVaultMemberInput:
@@ -132,6 +135,10 @@ class AddVaultMember:
                 inp.role
             )
             if updated is None:
+                
+                # Track member role update
+                track_vault_member_added(role=inp.role.value)
+                
                 raise RuntimeError("Authorization missing during role update")
             return AddVaultMemberResult(authorization=updated or existing)
 
@@ -145,4 +152,8 @@ class AddVaultMember:
             granted_at=granted_at,
         )
         created = self._auth_repo.create(auth)
+        
+        # Track new member addition
+        track_vault_member_added(role=inp.role.value)
+        
         return AddVaultMemberResult(authorization=created)

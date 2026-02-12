@@ -126,6 +126,34 @@ async def _reset_redis_singleton():
 
 
 @pytest.fixture(autouse=True)
+def _reset_prometheus_registry():
+    """Reset prometheus registry between tests to avoid duplicate metric errors."""
+    from prometheus_client import REGISTRY
+    
+    # Clear all collectors from the default registry
+    collectors_to_remove = list(REGISTRY._names_to_collectors.keys())
+    for name in collectors_to_remove:
+        try:
+            collector = REGISTRY._names_to_collectors.pop(name)
+            if name in REGISTRY._children:
+                REGISTRY._children.pop(name, None)
+        except (KeyError, AttributeError):
+            pass
+    
+    yield
+    
+    # Clean up again after test
+    collectors_to_remove = list(REGISTRY._names_to_collectors.keys())
+    for name in collectors_to_remove:
+        try:
+            collector = REGISTRY._names_to_collectors.pop(name)
+            if name in REGISTRY._children:
+                REGISTRY._children.pop(name, None)
+        except (KeyError, AttributeError):
+            pass
+
+
+@pytest.fixture(autouse=True)
 def _clear_in_memory_vault_auth_repo():
     """Clear in-memory vault authorization repo between tests."""
     _in_memory_vault_auth_repo.clear()
