@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
+from app.api.middleware.request_id import RequestIDMiddleware
 from app.api.router import api_router
 from app.core.settings import settings
-from app.core.logging import setup_logging
+from app.core.logging import get_logger, setup_logging
 from app.core.sentry import init_sentry
 from app.infrastructure.messaging.websocket_manager import manager
 from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
@@ -15,6 +16,8 @@ init_sentry()
 
 # Create instrumentor once at module level to avoid duplicate metric registration
 _instrumentator = None
+logger = get_logger(__name__)
+
 
 def get_instrumentator() -> Instrumentator:
     """Get or create the reusable Prometheus instrumentator."""
@@ -40,14 +43,13 @@ async def lifespan(app: FastAPI):
 
     await redis_startup()
     await manager.start()
-    print("✅ WebSocket manager started")
+    logger.info("websocket_manager_started")
 
     yield
 
     await manager.stop()
     await redis_shutdown()
-    print("👋 WebSocket manager stopped")
-
+    logger.info("websocket_manager_stopped")
 
 
 def create_app() -> FastAPI:
@@ -57,6 +59,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(RequestIDMiddleware)
     app.include_router(api_router, prefix="/api")
     
     # Only instrument if not already done to avoid duplicate metrics
