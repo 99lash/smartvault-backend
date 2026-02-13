@@ -59,6 +59,15 @@ class Settings(BaseSettings):
         description="Whether to send personally identifiable information (KEEP FALSE)"
     )
     
+    # INTERNAL ADMIN API
+    ADMIN_API_TOKEN: str | None = Field(
+        None,
+        description=(
+            "Secret token for internal admin API. "
+            "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    )
+    
     @property
     def resolved_email_backend(self) -> str:
         """Choose email backend based on explicit setting, environment, and SMTP availability."""
