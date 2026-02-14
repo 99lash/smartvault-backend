@@ -7,14 +7,15 @@ Thank you for considering contributing to SmartVault! This document provides gui
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Development Workflow](#development-workflow)
-3. [Branch Naming Conventions](#branch-naming-conventions)
-4. [Commit Message Standards](#commit-message-standards)
-5. [Pull Request Process](#pull-request-process)
-6. [Code Standards](#code-standards)
-7. [Testing Requirements](#testing-requirements)
-8. [Code Review Checklist](#code-review-checklist)
-9. [Documentation Requirements](#documentation-requirements)
+2. [Issue Creation Standard](#issue-creation-standard)
+3. [Development Workflow](#development-workflow)
+4. [Branch Naming Conventions](#branch-naming-conventions)
+5. [Commit Message Standards](#commit-message-standards)
+6. [Pull Request Process](#pull-request-process)
+7. [Code Standards](#code-standards)
+8. [Testing Requirements](#testing-requirements)
+9. [Code Review Checklist](#code-review-checklist)
+10. [Documentation Requirements](#documentation-requirements)
 
 ---
 
@@ -58,6 +59,57 @@ make dev
 make test
 curl http://localhost:8000/api/v1/health
 ```
+
+---
+
+## Issue Creation Standard
+
+Before starting work on a feature or bug fix, you must create an issue following the **SmartVault Issue Creation Standard**.
+
+### Creating Issues
+
+All issues must follow our standardized format to ensure:
+- Architectural clarity
+- Security awareness
+- Observability correctness
+- Test enforcement
+- Predictable execution
+
+**How to create an issue:**
+
+1. Click **"New Issue"** on GitHub
+2. Select **"SmartVault Standard Issue"** template
+3. Fill out all required sections
+4. Use the title format: `<Type>: <Surface>: <Short Summary>`
+   - Example: `Bug: API: /health/detailed always returns 200`
+5. Add appropriate labels
+6. Reference related issues or PRs
+
+**For complete details, see [`ISSUE_STANDARD.md`](ISSUE_STANDARD.md).**
+
+### Issue Title Format
+
+```
+<Type>: <Surface>: <Short Action-Oriented Summary>
+```
+
+**Types:** Bug, Security, Refactor, Enhancement, Observability, Docs, Infra, Test
+
+**Surfaces:** API, Application, Domain, Infrastructure, Internal Admin, Internal Ops, CI, Docs
+
+### Required Sections
+
+Every issue must include:
+- 🧾 Summary
+- 📂 Scope (Files Affected)
+- ❗ Problem Statement
+- ⚠ Risk & Impact
+- ✅ Acceptance Criteria
+- 🧪 Testing Requirements
+- 📈 Severity / Priority Matrix
+- 🏷 Labels
+
+**This is mandatory.** Non-compliant issues will be sent back for revision.
 
 ---
 

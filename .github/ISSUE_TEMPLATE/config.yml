@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/XpnsiveSharks/smartvault-backend/tree/HEAD/Docs
+    about: Review documentation before opening an issue
+  - name: 🔍 Troubleshooting Guide
+    url: https://github.com/XpnsiveSharks/smartvault-backend/blob/HEAD/Docs/TROUBLESHOOTING.md
+    about: Check troubleshooting guide for common problems
