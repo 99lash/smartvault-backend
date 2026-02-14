@@ -407,6 +407,7 @@ make test-k k="pattern"  # Run tests matching pattern
 
 ### Development
 - [Contributing Guidelines](Docs/CONTRIBUTING.md)
+- [Issue Creation Standard](Docs/ISSUE_STANDARD.md)
 - [Development Workflow](Docs/DEVELOPMENT.md)
 - [Testing Guide](Docs/test.md)
 
