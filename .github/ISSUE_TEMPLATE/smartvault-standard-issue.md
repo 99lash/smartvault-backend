@@ -122,17 +122,23 @@ curl -H "Authorization: Bearer <ADMIN_TOKEN>" http://localhost:8000/api/...
 
 ## 📈 Severity / Priority Matrix
 
+<!-- Select one severity and one priority level -->
+
 **Severity (Impact):**
-- [ ] S0 – Critical (Security breach / Data loss)
-- [ ] S1 – High (Production risk)
-- [ ] S2 – Medium (Functional bug / Incorrect behavior)
-- [ ] S3 – Low (Docs / Minor improvement)
+<!-- S0 – Critical (Security breach / Data loss) -->
+<!-- S1 – High (Production risk) -->
+<!-- S2 – Medium (Functional bug / Incorrect behavior) -->
+<!-- S3 – Low (Docs / Minor improvement) -->
+
+**Severity:** 
 
 **Priority (Execution Urgency):**
-- [ ] P0 – Immediate
-- [ ] P1 – High
-- [ ] P2 – Normal
-- [ ] P3 – Backlog
+<!-- P0 – Immediate -->
+<!-- P1 – High -->
+<!-- P2 – Normal -->
+<!-- P3 – Backlog -->
+
+**Priority:**
 
 ## 🏷 Labels
 
