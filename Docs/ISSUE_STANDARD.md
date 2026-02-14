@@ -361,12 +361,9 @@ Acceptance Criteria:
 
 Use this for all future issues:
 
+**Note:** The title should be entered in the GitHub issue title field, not in the body. Use the format: `<Type>: <Surface>: <Short Summary>`
+
 ```markdown
-Title:
-<Type>: <Surface>: <Short Summary>
-
----
-
 ## 🧾 Summary
 <Short description>
 
