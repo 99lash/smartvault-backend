@@ -18,12 +18,17 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
+from app.application.ports.activity_log_repository import ActivityLogRepository
 from app.application.ports.vault_repository import VaultRepository
 from app.application.ports.websocket_manager import WebSocketManagerPort
 from app.application.use_cases.check_vault_access import CheckVaultAccess
+from app.application.use_cases.log_activity import LogActivity, LogActivityInput
+from app.core.logging import get_logger
 from app.core.settings import settings
 from app.domain.exceptions import InsufficientPermissionsError, UnauthorizedVaultAccessError
 from app.domain.value_objects.websocket_messages import CommandAction, MessageType
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -61,7 +66,8 @@ class SendUnlockCommand:
     3. Verify vault is online
     4. Create signed command payload
     5. Send via WebSocket
-    6. Return command tracking info
+    6. Log command in activity audit trail
+    7. Return command tracking info
     """
 
     # Command expiry time in seconds
@@ -72,18 +78,22 @@ class SendUnlockCommand:
         repo: VaultRepository,
         check_access: CheckVaultAccess,
         ws_manager: WebSocketManagerPort,
+        log_repo: ActivityLogRepository | None = None,
     ):
         """
         Initialize the use case with required dependencies.
 
         Args:
-            repo: Repository to fetch vault data.
+            repo:        Repository to fetch vault data.
             check_access: Use case for authorization checks.
-            ws_manager: WebSocket manager for sending commands to vaults.
+            ws_manager:  WebSocket manager for sending commands to vaults.
+            log_repo:    Optional activity log repository. If provided, commands
+                         are recorded in the audit trail.
         """
         self._repo = repo
         self._check_access = check_access
         self._ws_manager = ws_manager
+        self._log_activity = LogActivity(log_repo) if log_repo else None
 
     async def execute(
         self,
@@ -94,12 +104,9 @@ class SendUnlockCommand:
         """
         Send an unlock command to a vault device.
 
-        This method performs authorization checks before creating and
-        sending the signed command.
-
         Args:
             vault_id: ID of the vault to unlock.
-            user_id: ID of the user requesting the unlock.
+            user_id:  ID of the user requesting the unlock.
 
         Returns:
             SendUnlockCommandResult with tracking information.
@@ -121,7 +128,6 @@ class SendUnlockCommand:
             raise UnauthorizedVaultAccessError(user_id, vault_id)
 
         # Step 3: Verify user's role permits unlocking
-        # (OWNER can always unlock, role check for members)
         if access_info.role and not access_info.role.can_unlock():
             raise InsufficientPermissionsError(
                 user_id=user_id,
@@ -141,9 +147,8 @@ class SendUnlockCommand:
         command_id = f"cmd_{uuid4()}"
         timestamp = datetime.now(timezone.utc)
         expires_at = timestamp + timedelta(seconds=self.COMMAND_EXPIRY_SECONDS)
-        nonce = secrets.token_hex(16)  # Random bytes for replay protection
+        nonce = secrets.token_hex(16)
 
-        # Build the command data structure
         command_data = {
             "command_id": command_id,
             "action": CommandAction.UNLOCK.value,
@@ -153,12 +158,11 @@ class SendUnlockCommand:
             "nonce": nonce,
         }
 
-        # Step 6: Sign the command to prevent tampering
-        # The vault device will verify this signature before executing
+        # Step 6: Sign the command
         signature = self._sign_command(command_data)
         command_data["signature"] = signature
 
-        # Step 7: Send command via WebSocket connection
+        # Step 7: Send command via WebSocket
         message = {
             "type": MessageType.COMMAND.value,
             "payload": command_data,
@@ -170,8 +174,18 @@ class SendUnlockCommand:
         except Exception as e:
             raise VaultOfflineError(f"Failed to send command: {e}")
 
-        # TODO: Step 8: Log command in activity audit trail
-        # This should record: command_id, user_id, vault_id, timestamp, result
+        # Step 8: Log command in activity audit trail — fire-and-forget
+        if self._log_activity:
+            try:
+                self._log_activity.execute(LogActivityInput(
+                    vault_id=vault_id,
+                    action="UNLOCK_COMMAND_SENT",
+                    method="COMMAND",
+                    user_id=user_id,
+                    metadata={"command_id": command_id},
+                ))
+            except Exception:
+                logger.warning("activity_log_failed", vault_id=vault_id, action="UNLOCK_COMMAND_SENT")
 
         return SendUnlockCommandResult(
             command_id=command_id,
@@ -184,19 +198,12 @@ class SendUnlockCommand:
         """
         Create HMAC-SHA256 signature for the command.
 
-        Security Purpose:
-        - Ensures command wasn't modified in transit
-        - Prevents replay attacks (nonce + timestamp + expiry)
-        - Vault device can verify authenticity before executing
-
         Args:
             command_data: The command payload to sign.
 
         Returns:
             Hexadecimal signature string.
         """
-        # Build canonical string from command fields
-        # Order matters: must match vault device's verification logic
         canonical = "\n".join(
             [
                 command_data["command_id"],
@@ -208,7 +215,6 @@ class SendUnlockCommand:
             ]
         )
 
-        # Generate HMAC-SHA256 signature using the command secret
         signature = hmac.new(
             settings.VAULT_COMMAND_SECRET.encode("utf-8"),
             canonical.encode("utf-8"),
