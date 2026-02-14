@@ -47,6 +47,7 @@ jobs:
       SECRET_KEY: super-secret-key-that-you-should-change-me
       APP_ENV: development
       DEBUG: "true"
+      ADMIN_API_TOKEN: ci-admin-token
 
     steps:
       - name: Checkout
