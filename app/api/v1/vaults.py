@@ -164,7 +164,7 @@ async def set_vault_pin(
 
         result = await run_in_threadpool(
             uc.execute,
-            SetVaultPINInput(vault_id=vault_id, pin=payload.pin),
+            SetVaultPINInput(vault_id=vault_id, pin=payload.pin, user_id=current_user_id),
         )
         return SetPINResponse(vault_id=result.vault.id, pin_set_at=result.vault.pin_set_at)
     except UnauthorizedVaultAccessError as e:
@@ -200,7 +200,7 @@ async def remove_vault_pin(
 
         result = await run_in_threadpool(
             uc.execute,
-            RemoveVaultPINInput(vault_id=vault_id),
+            RemoveVaultPINInput(vault_id=vault_id, user_id=current_user_id),
         )
         return RemovePINResponse(vault_id=result.vault.id, removed=True)
     except UnauthorizedVaultAccessError as e:
@@ -267,7 +267,7 @@ async def unlock_vault_with_pin(
             raise UnauthorizedVaultAccessError(current_user_id, vault_id)
 
         result = await uc.execute(
-            UnlockVaultWithPINInput(vault_id=vault_id, pin=payload.pin)
+            UnlockVaultWithPINInput(vault_id=vault_id, pin=payload.pin, user_id=current_user_id)
         )
 
         return UnlockWithPINResponse(
