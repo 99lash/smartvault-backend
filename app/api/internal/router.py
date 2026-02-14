@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from app.api.internal.business import overview
+from app.api.internal.business import activity, overview
 from app.api.internal.deps.admin_auth import require_admin_token
+from app.api.internal.ops import summary
 from app.api.internal.security import alerts
 from app.schemas.admin import AdminPingResponse
 
@@ -20,11 +21,7 @@ internal_router = APIRouter(
 
 @internal_router.get("/ping", response_model=AdminPingResponse)
 def admin_ping() -> AdminPingResponse:
-    """
-    Admin API connectivity check.
-
-    Verifies admin token is valid and API is reachable.
-    """
+    """Admin API connectivity check."""
     return AdminPingResponse(
         status="ok",
         admin_api="operational",
@@ -32,7 +29,7 @@ def admin_ping() -> AdminPingResponse:
     )
 
 # =============================================================================
-# BUSINESS endpoints (Slice 2)
+# BUSINESS endpoints (Slice 2 + 5)
 # =============================================================================
 internal_router.include_router(
     overview.router,
@@ -40,6 +37,22 @@ internal_router.include_router(
 )
 
 internal_router.include_router(
+    activity.router,
+    prefix="/business",
+)
+
+# =============================================================================
+# SECURITY endpoints (Slice 3)
+# =============================================================================
+internal_router.include_router(
     alerts.router,
     prefix="/security",
+)
+
+# =============================================================================
+# OPS DASHBOARD endpoint (Slice 5)
+# =============================================================================
+internal_router.include_router(
+    summary.router,
+    prefix="/ops",
 )
