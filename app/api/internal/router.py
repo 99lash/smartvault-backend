@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.internal.business import overview
 from app.api.internal.deps.admin_auth import require_admin_token
+from app.api.internal.security import alerts
 from app.schemas.admin import AdminPingResponse
 
 internal_router = APIRouter(
@@ -38,8 +39,7 @@ internal_router.include_router(
     prefix="/business",
 )
 
-# =============================================================================
-# Register future slices here:
-# Slice 3: from app.api.internal.security import alerts
-#          internal_router.include_router(alerts.router, prefix="/security")
-# =============================================================================
+internal_router.include_router(
+    alerts.router,
+    prefix="/security",
+)
