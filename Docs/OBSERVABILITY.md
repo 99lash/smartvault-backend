@@ -607,6 +607,7 @@ processors=[
 - Advanced alerting rules
 - Distributed tracing (OpenTelemetry)
 - Log aggregation (ELK/Datadog)
+- [Admin Console](../Docs/TUI.md) (Implemented)
 
 **Related Documentation:**
 - [Architecture](ARCHITECTURE.md) — System design

@@ -323,6 +323,12 @@ make test-k k="pattern"  # Run tests matching pattern
 - Structured audit logging
 - Domain event tracking
 
+**Operations Monitoring (TUI)**
+- Interactive Admin Console
+- Real-time Dashboard & Notifications
+- Security Alert Management
+- Service Diagnostics
+
 **Quality Assurance**
 - 119+ tests across all layers
 - In-memory test doubles for fast testing
@@ -340,7 +346,6 @@ make test-k k="pattern"  # Run tests matching pattern
 - Hardware vault WebSocket integration
 - Push notifications
 - Activity dashboard
-- Admin panel
 
 ---
 
@@ -397,9 +402,11 @@ make test-k k="pattern"  # Run tests matching pattern
 - [Architecture Deep Dive](Docs/ARCHITECTURE.md)
 - [Observability Guide](Docs/OBSERVABILITY.md)
 - [API Reference](Docs/API.md)
+- [Internal Ops API](Docs/INTERNAL_API.md)
 - [Security Model](Docs/SECURITY.md)
 
 ### Operational Guides
+- [Admin TUI Guide](Docs/TUI.md)
 - [Deployment Guide](Docs/DEPLOYMENT.md)
 - [Troubleshooting](Docs/TROUBLESHOOTING.md)
 - [Release Strategy](Docs/releases.md)
@@ -407,6 +414,7 @@ make test-k k="pattern"  # Run tests matching pattern
 
 ### Development
 - [Contributing Guidelines](Docs/CONTRIBUTING.md)
+- [Issue Creation Standard](Docs/ISSUE_STANDARD.md)
 - [Development Workflow](Docs/DEVELOPMENT.md)
 - [Testing Guide](Docs/test.md)
 
