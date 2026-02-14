@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.internal.business import activity, overview
 from app.api.internal.deps.admin_auth import require_admin_token
-from app.api.internal.ops import summary
+from app.api.internal.ops import diagnostics, summary
 from app.api.internal.security import alerts
 from app.schemas.admin import AdminPingResponse
 
@@ -29,7 +29,7 @@ def admin_ping() -> AdminPingResponse:
     )
 
 # =============================================================================
-# BUSINESS endpoints (Slice 2 + 5)
+# BUSINESS endpoints
 # =============================================================================
 internal_router.include_router(
     overview.router,
@@ -42,7 +42,7 @@ internal_router.include_router(
 )
 
 # =============================================================================
-# SECURITY endpoints (Slice 3)
+# SECURITY endpoints
 # =============================================================================
 internal_router.include_router(
     alerts.router,
@@ -50,9 +50,16 @@ internal_router.include_router(
 )
 
 # =============================================================================
-# OPS DASHBOARD endpoint (Slice 5)
+# OPS DASHBOARD endpoint
 # =============================================================================
 internal_router.include_router(
     summary.router,
+    prefix="/ops",
+)
+# =============================================================================
+# OPS DIAGNOSTICS endpoints
+# =============================================================================
+internal_router.include_router(
+    diagnostics.router,
     prefix="/ops",
 )

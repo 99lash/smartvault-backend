@@ -47,6 +47,7 @@ jobs:
       SECRET_KEY: super-secret-key-that-you-should-change-me
       APP_ENV: development
       DEBUG: "true"
+      ADMIN_API_TOKEN: ci-admin-token
 
     steps:
       - name: Checkout
@@ -62,6 +63,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+
+      - name: Run DB migrations
+        run: alembic upgrade head
 
       - name: Run tests
         run: pytest
