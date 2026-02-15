@@ -142,7 +142,7 @@ class APIKeysScreen(BaseScreen):
     
     async def on_mount(self) -> None:
         """Load data when screen mounts."""
-        await self.load_data()
+        self.run_worker(self.load_data())
     
     async def load_data(self) -> None:
         """Load API keys from API."""
@@ -276,14 +276,6 @@ class APIKeysScreen(BaseScreen):
             
         except Exception as e:
             self.notify(f"Error revoking key: {e}", severity="error")
-    
-    def action_refresh(self) -> None:
-        """Refresh the API keys."""
-        self.app.call_later(self.load_data)
-    
-    def action_back(self) -> None:
-        """Go back to previous screen."""
-        self.app.pop_screen()
     
     def action_create(self) -> None:
         """Focus on create section."""

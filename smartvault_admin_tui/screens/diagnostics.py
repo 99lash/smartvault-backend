@@ -7,14 +7,13 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.screen import Screen
 from textual.widgets import Label, Static
 
-from smartvault_admin_tui.api.client import APIClient
+from smartvault_admin_tui.screens.base import BaseScreen
 from smartvault_admin_tui.widgets.metric_card import ProgressBar
 
 
-class DiagnosticsScreen(Screen):
+class DiagnosticsScreen(BaseScreen):
     """System diagnostics screen."""
     
     BINDINGS = [
@@ -149,7 +148,7 @@ class DiagnosticsScreen(Screen):
     
     async def on_mount(self) -> None:
         """Load data when screen mounts."""
-        await self.load_data()
+        self.run_worker(self.load_data())
     
     async def load_data(self) -> None:
         """Load diagnostics data from API."""
@@ -161,11 +160,10 @@ class DiagnosticsScreen(Screen):
             loading.remove_class("hidden")
             content.add_class("hidden")
             
-            async with APIClient() as client:
-                self._redis = await client.get_redis_diagnostics()
-                self._websockets = await client.get_websocket_diagnostics()
-                self._database = await client.get_database_diagnostics()
-                self._email = await client.get_email_status()
+            self._redis = await self.api_client.get_redis_diagnostics()
+            self._websockets = await self.api_client.get_websocket_diagnostics()
+            self._database = await self.api_client.get_database_diagnostics()
+            self._email = await self.api_client.get_email_status()
             
             self._render_data()
             loading.add_class("hidden")
@@ -244,7 +242,7 @@ class DiagnosticsScreen(Screen):
     
     def action_refresh(self) -> None:
         """Refresh the diagnostics."""
-        self.app.call_later(self.load_data)
+        self.run_worker(self.load_data(), exclusive=True, group="refresh")
     
     def action_back(self) -> None:
         """Go back to previous screen."""

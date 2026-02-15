@@ -7,14 +7,13 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.screen import Screen
 from textual.widgets import Button, Label, Static, DataTable, Input
 
-from smartvault_admin_tui.api.client import APIClient
+from smartvault_admin_tui.screens.base import BaseScreen
 from smartvault_admin_tui.config import config
 
 
-class ActivityScreen(Screen):
+class ActivityScreen(BaseScreen):
     """Activity log screen with filters and pagination."""
     
     BINDINGS = [
@@ -106,7 +105,7 @@ class ActivityScreen(Screen):
     
     async def on_mount(self) -> None:
         """Load data when screen mounts."""
-        await self.load_data()
+        self.run_worker(self.load_data())
     
     async def load_data(self) -> None:
         """Load activity data from API."""
@@ -118,8 +117,7 @@ class ActivityScreen(Screen):
             loading.remove_class("hidden")
             content.add_class("hidden")
             
-            async with APIClient() as client:
-                self._data = await client.get_activity(hours=self._hours, limit=self._limit)
+            self._data = await self.api_client.get_activity(hours=self._hours, limit=self._limit)
             
             self._render_data()
             loading.add_class("hidden")
@@ -177,7 +175,7 @@ class ActivityScreen(Screen):
     
     def action_refresh(self) -> None:
         """Refresh the activity data."""
-        self.app.call_later(self.load_data)
+        self.run_worker(self.load_data(), exclusive=True, group="refresh")
     
     def action_back(self) -> None:
         """Go back to previous screen."""

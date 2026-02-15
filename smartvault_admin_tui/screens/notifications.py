@@ -123,7 +123,7 @@ class NotificationsScreen(BaseScreen):
         indicator.remove_class("warning")
         indicator.remove_class("critical")
         
-        if status == "operational":
+        if status == "healthy":
             indicator.add_class("ok")
         elif status == "warning":
             indicator.add_class("warning")

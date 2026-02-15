@@ -7,13 +7,12 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.screen import Screen
 from textual.widgets import Button, Label, Static, DataTable, Input
 
-from smartvault_admin_tui.api.client import APIClient
+from smartvault_admin_tui.screens.base import BaseScreen
 
 
-class SessionsScreen(Screen):
+class SessionsScreen(BaseScreen):
     """Session management screen."""
     
     BINDINGS = [
@@ -92,7 +91,7 @@ class SessionsScreen(Screen):
     
     async def on_mount(self) -> None:
         """Load data when screen mounts."""
-        await self.load_data()
+        self.run_worker(self.load_data())
     
     async def load_data(self) -> None:
         """Load session data from API."""
@@ -104,8 +103,7 @@ class SessionsScreen(Screen):
             loading.remove_class("hidden")
             content.add_class("hidden")
             
-            async with APIClient() as client:
-                self._data = await client.get_session_stats()
+            self._data = await self.api_client.get_session_stats()
             
             self._render_data()
             loading.add_class("hidden")
@@ -151,8 +149,7 @@ class SessionsScreen(Screen):
                 return
             
             try:
-                async with APIClient() as client:
-                    result = await client.revoke_user_sessions(user_id)
+                result = await self.api_client.revoke_user_sessions(user_id)
                 
                 # Update recent revocations
                 recent = self.query_one("#recent-revocations", Label)
@@ -173,7 +170,7 @@ class SessionsScreen(Screen):
     
     def action_refresh(self) -> None:
         """Refresh the session data."""
-        self.app.call_later(self.load_data)
+        self.run_worker(self.load_data(), exclusive=True, group="refresh")
     
     def action_back(self) -> None:
         """Go back to previous screen."""

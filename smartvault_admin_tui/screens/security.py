@@ -99,7 +99,7 @@ class SecurityScreen(BaseScreen):
     
     async def on_mount(self) -> None:
         """Load data when screen mounts."""
-        await self.load_data()
+        self.run_worker(self.load_data())
     
     async def load_data(self) -> None:
         """Load security data from API."""
@@ -166,21 +166,16 @@ class SecurityScreen(BaseScreen):
             # Violators table
             table = self.query_one("#violators-table", DataTable)
             table.clear()
-            table.add_columns("Key", "Count", "TTL (s)")
+            
+            # Avoid re-adding columns when the table is reused
+            if len(table.columns) == 0:
+                table.add_columns("Key", "Count", "TTL (s)")
             for v in self._rate_limits_data.get("top_violators", []):
                 table.add_row(
                     v.get("key", "")[:40],
                     str(v.get("current_count", 0)),
                     str(v.get("ttl_seconds", 0)),
                 )
-    
-    def action_refresh(self) -> None:
-        """Refresh the security data."""
-        self.app.call_later(self.load_data)
-    
-    def action_back(self) -> None:
-        """Go back to previous screen."""
-        self.app.pop_screen()
     
     def action_rate_limits(self) -> None:
         """Focus on rate limits section."""

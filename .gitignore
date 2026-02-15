@@ -53,6 +53,8 @@ Thumbs.db
 # Temp
 .tmp/
 .cache/
+debug_*.py
+.tmp_*.py
 
 .git/
 

@@ -8,6 +8,7 @@ from app.core.logging import get_logger, setup_logging
 from app.core.sentry import init_sentry
 from app.infrastructure.messaging.websocket_manager import manager
 from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
+from app.infrastructure.services.session_metrics import close_session_metrics_pool
 
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.infrastructure.monitoring.metrics import set_app_info
@@ -49,7 +50,8 @@ async def lifespan(app: FastAPI):
 
     await manager.stop()
     await redis_shutdown()
-    logger.info("websocket_manager_stopped")
+    close_session_metrics_pool()
+    logger.info("application_shutdown_complete")
 
 
 def create_app() -> FastAPI:
