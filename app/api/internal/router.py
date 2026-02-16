@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-
-from app.api.internal.business import activity, overview
+from app.api.internal.business import activity, overview, trends
 from app.api.internal.deps.admin_auth import require_admin_token
 from app.api.internal.ops import (
     api_keys,
@@ -37,13 +36,14 @@ def admin_ping() -> AdminPingResponse:
     )
 
 # =============================================================================
-# BUSINESS endpoints (Slices 2, 5)
+# BUSINESS endpoints 
 # =============================================================================
 internal_router.include_router(overview.router,  prefix="/business")
 internal_router.include_router(activity.router,  prefix="/business")
+internal_router.include_router(trends.router, prefix="/business")
 
 # =============================================================================
-# SECURITY endpoints (Slice 3)
+# SECURITY endpoints 
 # =============================================================================
 internal_router.include_router(alerts.router, prefix="/security")
 
@@ -54,26 +54,26 @@ internal_router.include_router(summary.router,     prefix="/ops")
 internal_router.include_router(diagnostics.router, prefix="/ops")
 
 # =============================================================================
-# OPS — Rate Limits (Slice 4)
+# OPS — Rate Limits
 # =============================================================================
 internal_router.include_router(rate_limits.router, prefix="/ops")
 
 # =============================================================================
-# OPS — Sessions (Slices 5, 6)
+# OPS — Sessions 
 # =============================================================================
 internal_router.include_router(sessions.router, prefix="/ops")
 
 # =============================================================================
-# OPS — Notifications (Slice 7)
+# OPS — Notifications 
 # =============================================================================
 internal_router.include_router(notifications.router, prefix="/ops")
 
 # =============================================================================
-# OPS — Audit Logs (Slice 10)
+# OPS — Audit Logs 
 # =============================================================================
 internal_router.include_router(audit.router, prefix="/ops")
 
 # =============================================================================
-# OPS — API Keys (Slice 13)
+# OPS — API Keys
 # =============================================================================
 internal_router.include_router(api_keys.router, prefix="/ops")

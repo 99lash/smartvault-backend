@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware.request_id import RequestIDMiddleware
 from app.api.router import api_router
@@ -61,9 +62,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["X-Admin-Token", "Content-Type", "Accept"],
+        expose_headers=["X-Request-ID"],
+    )
     app.add_middleware(RequestIDMiddleware)
     app.include_router(api_router, prefix="/api")
-    
+
     # Only instrument if not already done to avoid duplicate metrics
     if not hasattr(app, "_instrumented"):
         get_instrumentator().instrument(app).expose(
@@ -77,7 +85,7 @@ def create_app() -> FastAPI:
         version=app.version,
         environment=settings.environment,
     )
-    
+
     return app
 
 

@@ -25,6 +25,7 @@ from smartvault_admin_tui.screens.api_keys import APIKeysScreen
 from smartvault_admin_tui.screens.diagnostics import DiagnosticsScreen
 from smartvault_admin_tui.screens.audit import AuditScreen
 from smartvault_admin_tui.screens.notifications import NotificationsScreen
+from smartvault_admin_tui.screens.trends import TrendsScreen
 import httpx
 from smartvault_admin_tui.api.client import APIClient
 
@@ -60,6 +61,7 @@ class SmartVaultAdminApp(App):
         Binding("ctrl+n", "notifications", "Notifications", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
         Binding("question_mark", "help", "Help", show=True),
+        Binding("ctrl+t", "trends", "Trends", show=True),
     ]
     
     SCREENS = {
@@ -71,6 +73,7 @@ class SmartVaultAdminApp(App):
         "diagnostics": DiagnosticsScreen,
         "audit": AuditScreen,
         "notifications": NotificationsScreen,
+        "trends": TrendsScreen,
     }
     
 
@@ -134,6 +137,10 @@ class SmartVaultAdminApp(App):
         """Navigate to notifications screen."""
         self.push_screen("notifications")
     
+    def action_trends(self) -> None:
+        """Navigate to trends screen."""
+        self.push_screen("trends")
+        
     def action_help(self) -> None:
         """Show help screen."""
         self.notify(
@@ -144,12 +151,13 @@ class SmartVaultAdminApp(App):
             "Ctrl+R - Sessions\n"
             "Ctrl+K - API Keys\n"
             "Ctrl+X - Diagnostics\n"
+            "Ctrl+T - Trends\n"
             "Ctrl+U - Audit\n"
             "Ctrl+Q - Quit",
             title="Help",
             timeout=10,
         )
-
+   
 
 def main() -> None:
     """Main entry point."""

@@ -232,3 +232,16 @@ class APIClient:
         response = await self.client.delete(f"/internal/ops/api-keys/{key_id}")
         response.raise_for_status()
         return response.status_code == 204
+    
+# =========================================================================
+# BUSINESS TRENDS
+# =========================================================================
+
+    async def get_business_trends(self, days: int = 30) -> dict[str, Any]:
+        """Daily user signup and vault provisioning trends."""
+        response = await self.client.get(
+            "/internal/business/trends",
+            params={"days": days},
+        )
+        response.raise_for_status()
+        return response.json()

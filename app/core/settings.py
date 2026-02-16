@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DEV_AUTH_BYPASS: bool = False
     DATABASE_URL: str = 'postgresql+psycopg://postgres:postgres@localhost:5432/smartvault'
     REDIS_URL: str = 'redis://redis:6379/0'
+    CORS_ORIGINS: list[str] = []
     
     # Security
     SECRET_KEY: str
