@@ -1,0 +1,8 @@
+{
+  "service": "smtp",
+  "status": "healthy",
+  "sent_today": 0,
+  "failed_today": 0,
+  "note": "Wire increment_email_sent/failed into SMTPEmailService to populate counts.",
+  "checked_at": "2026-02-16T00:00:00Z"
+}

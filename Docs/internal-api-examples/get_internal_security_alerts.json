@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-02-16T00:00:00Z",
+  "status": "ok",
+  "active_alerts": [],
+  "last_24h": {
+    "failed_unlocks_1h": 0,
+    "failed_unlocks_24h": 0,
+    "pin_lockouts_24h": 0
+  }
+}

@@ -62,11 +62,15 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    cors_origins = list(
+        dict.fromkeys([*(settings.CORS_ORIGINS or []), "http://localhost:5173"])
+    )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_methods=["GET", "POST", "DELETE"],
-        allow_headers=["X-Admin-Token", "Content-Type", "Accept"],
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*", "X-Admin-Token"],
         expose_headers=["X-Request-ID"],
     )
     app.add_middleware(RequestIDMiddleware)

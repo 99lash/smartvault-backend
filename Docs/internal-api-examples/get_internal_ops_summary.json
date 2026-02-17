@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-02-16T00:00:00Z",
+  "overall_status": "ok",
+  "business": {
+    "users": {
+      "total": 0,
+      "new_today": 0,
+      "new_this_week": 0
+    },
+    "vaults": {
+      "total": 0,
+      "with_pin": 0,
+      "by_status": {}
+    },
+    "members": {
+      "total_authorizations": 0,
+      "by_role": {}
+    }
+  },
+  "security": {
+    "status": "ok",
+    "failed_unlocks_1h": 0,
+    "failed_unlocks_24h": 0,
+    "pin_lockouts_24h": 0,
+    "alert_count": 0
+  },
+  "activity": {
+    "period_hours": 24,
+    "total_events": 0,
+    "vault_unlocks": 0,
+    "failed_unlocks": 0,
+    "pin_operations": 0,
+    "member_changes": 0,
+    "state_changes": 0
+  }
+}
