@@ -10,6 +10,7 @@ from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.add_vault_member import AddVaultMember
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.list_vault_members import ListVaultMembers
+from app.application.use_cases.list_user_vaults import ListUserVaults
 from app.application.use_cases.log_activity import LogActivity
 from app.application.use_cases.remove_vault_member import RemoveVaultMember
 from app.application.use_cases.remove_vault_pin import RemoveVaultPIN
@@ -67,6 +68,12 @@ def get_list_vault_members_uc(
     check_access: CheckVaultAccess = Depends(get_check_vault_access_uc),
 ) -> ListVaultMembers:
     return ListVaultMembers(auth_repo, check_access)
+
+
+def get_list_user_vaults_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+) -> ListUserVaults:
+    return ListUserVaults(vault_repo)
 
 
 def get_send_unlock_command_uc(

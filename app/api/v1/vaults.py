@@ -7,6 +7,7 @@ from app.api.deps.auth import get_current_user_id, get_rate_limiter
 from app.api.deps.users import get_current_user
 from app.api.deps.vaults import (
     get_check_vault_access_uc,
+    get_list_user_vaults_uc,
     get_remove_vault_pin_uc,
     get_send_unlock_command_uc,
     get_set_vault_pin_uc,
@@ -16,6 +17,7 @@ from app.api.deps.vaults import (
 from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.get_vault_status import GetVaultStatus, GetVaultStatusInput
+from app.application.use_cases.list_user_vaults import ListUserVaults
 from app.application.use_cases.provision_vault import (
     HardwareAlreadyProvisioned,
     ProvisionVault,
@@ -49,11 +51,40 @@ from app.schemas.vaults import (
     ProvisionVaultRequest,
     ProvisionVaultResponse,
     UnlockCommandResponse,
+    VaultAccessRoleEnum,
+    VaultListItemResponse,
     VaultStatusResponse,
 )
 
 
 router = APIRouter(tags=["vaults"])
+
+
+@router.get("/vaults", response_model=list[VaultListItemResponse])
+def list_user_vaults(
+    current_user_id: str = Depends(get_current_user_id),
+    uc: ListUserVaults = Depends(get_list_user_vaults_uc),
+) -> list[VaultListItemResponse]:
+    result = uc.execute(current_user_id)
+
+    items: list[VaultListItemResponse] = []
+    for summary in result.vaults:
+        role = (
+            VaultAccessRoleEnum.OWNER
+            if summary.is_owner
+            else VaultAccessRoleEnum(summary.role.value) if summary.role is not None else VaultAccessRoleEnum.VIEWER
+        )
+        items.append(
+            VaultListItemResponse(
+                vault_id=summary.vault.id,
+                vault_name=summary.vault.vault_name,
+                status=summary.vault.status,
+                role=role,
+                last_seen_at=summary.vault.last_seen_at,
+            )
+        )
+
+    return items
 
 
 @router.post(

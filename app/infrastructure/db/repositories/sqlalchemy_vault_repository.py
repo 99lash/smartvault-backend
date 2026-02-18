@@ -1,12 +1,16 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.application.ports.vault_repository import VaultRepository, VaultAlreadyExistsError
 from app.infrastructure.db.models.vault_orm import VaultORM
 from app.domain.models.vault import Vault
+from app.domain.models.vault_access_summary import VaultAccessSummary
+from app.domain.value_objects.vault_role import VaultRole
 from app.domain.value_objects.vault_status import VaultStatus
+from app.infrastructure.db.models.vault_authorization_orm import VaultAuthorizationORM
 
 # lipat nalang sa use case or domain kung business rule error na.
 # ang tingin ko ngayon dito ay data integrity error kaya dito ko muna nilagay
@@ -111,5 +115,38 @@ class SqlAlchemyVaultRepository(VaultRepository):
         self._session.refresh(row)
 
         return self._to_domain(row)
+
+    def list_for_user(self, user_id: str) -> list[VaultAccessSummary]:
+        stmt = (
+            select(VaultORM, VaultAuthorizationORM.role)
+            .outerjoin(
+                VaultAuthorizationORM,
+                (VaultAuthorizationORM.vault_id == VaultORM.id)
+                & (VaultAuthorizationORM.user_id == user_id),
+            )
+            .where(
+                or_(
+                    VaultORM.owner_id == user_id,
+                    VaultAuthorizationORM.user_id == user_id,
+                )
+            )
+            .order_by(VaultORM.created_at.desc())
+        )
+
+        rows = self._session.execute(stmt).all()
+        summaries: list[VaultAccessSummary] = []
+        for vault_row, role_str in rows:
+            vault = self._to_domain(vault_row)
+            is_owner = vault.owner_id == user_id
+            role = None if is_owner or role_str is None else VaultRole(role_str)
+            summaries.append(
+                VaultAccessSummary(
+                    vault=vault,
+                    role=role,
+                    is_owner=is_owner,
+                )
+            )
+
+        return summaries
 
 

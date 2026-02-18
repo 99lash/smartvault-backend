@@ -106,6 +106,13 @@ dev: up migrate current db-info redis-info
 # DEV ONLY: reset DB + flush Redis + re-run migrations
 reset: db-reset redis-flush migrate current
 
+# Seed database with test data
+seed:
+	docker compose exec $(SERVICE) python seed.py
+
+# DEV ONLY: reset DB + re-seed
+reseed: db-reset redis-flush migrate seed
+
 
 # --- Unit Test Helpers ---
 

@@ -216,7 +216,7 @@ class _NoopRateLimiter:
 
 @pytest.fixture
 def vault_repo(app) -> Generator[InMemoryVaultRepository, None, None]:
-    repo = InMemoryVaultRepository()
+    repo = InMemoryVaultRepository(auth_repo=_in_memory_vault_auth_repo)
     app.dependency_overrides[get_vault_repo] = lambda: repo
     yield repo
     app.dependency_overrides.pop(get_vault_repo, None)

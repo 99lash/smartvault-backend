@@ -30,6 +30,11 @@ class VaultAuthorizationRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_by_user(self, user_id: str) -> list[VaultAuthorization]:
+        """List all authorizations for a user."""
+        raise NotImplementedError
+
+    @abstractmethod
     def delete(self, vault_id: str, user_id: str) -> None:
         """Remove a user's authorization from a vault."""
         raise NotImplementedError

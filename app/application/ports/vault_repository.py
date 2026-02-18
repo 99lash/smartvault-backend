@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from app.domain.models.vault import Vault
+from app.domain.models.vault_access_summary import VaultAccessSummary
 
 
 class VaultAlreadyExistsError(Exception):
@@ -32,4 +33,9 @@ class VaultRepository(ABC):
         Update the stored PIN hash and timestamp for a vault.
         Returns the updated Vault.
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_for_user(self, user_id: str) -> list[VaultAccessSummary]:
+        """List vaults a user owns or has access to."""
         raise NotImplementedError

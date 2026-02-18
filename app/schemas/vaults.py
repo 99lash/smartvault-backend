@@ -1,5 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 from app.domain.value_objects.vault_status import VaultStatus
 
 
@@ -26,3 +28,20 @@ class UnlockCommandResponse(BaseModel):
     vault_id: str
     expires_at: datetime
     sent: bool
+
+
+class VaultAccessRoleEnum(str, Enum):
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
+    VIEWER = "VIEWER"
+
+
+class VaultListItemResponse(BaseModel):
+    vault_id: str
+    vault_name: str | None = Field(default=None, alias="name")
+    status: VaultStatus
+    role: VaultAccessRoleEnum
+    last_seen_at: datetime | None
+
+    model_config = ConfigDict(populate_by_name=True)

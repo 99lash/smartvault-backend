@@ -68,6 +68,13 @@ class SqlAlchemyVaultAuthorizationRepository(VaultAuthorizationRepository):
         orms = self._db.execute(stmt).scalars().all()
         return [self._to_domain(orm) for orm in orms]
 
+    def list_by_user(self, user_id: str) -> list[VaultAuthorization]:
+        stmt = select(VaultAuthorizationORM).where(
+            VaultAuthorizationORM.user_id == user_id
+        )
+        orms = self._db.execute(stmt).scalars().all()
+        return [self._to_domain(orm) for orm in orms]
+
     def delete(self, vault_id: str, user_id: str) -> None:
         stmt = delete(VaultAuthorizationORM).where(
             VaultAuthorizationORM.vault_id == vault_id,

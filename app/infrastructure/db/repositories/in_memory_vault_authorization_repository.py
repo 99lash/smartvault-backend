@@ -40,6 +40,9 @@ class InMemoryVaultAuthorizationRepository(VaultAuthorizationRepository):
     def list_by_vault(self, vault_id: str) -> list[VaultAuthorization]:
         return [auth for (v_id, _), auth in self._store.items() if v_id == vault_id]
 
+    def list_by_user(self, user_id: str) -> list[VaultAuthorization]:
+        return [auth for (_, u_id), auth in self._store.items() if u_id == user_id]
+
     def delete(self, vault_id: str, user_id: str) -> None:
         key = (vault_id, user_id)
         self._store.pop(key, None)
