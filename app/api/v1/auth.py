@@ -12,7 +12,7 @@ from app.application.use_cases.create_user import CreateUser, CreateUserInput, D
 from app.application.use_cases.authenticate_user import AuthenticateUser, LoginInput, InvalidCredentialsError
 from app.application.use_cases.reset_password import RequestPasswordReset, RequestPasswordResetInput, ConfirmPasswordReset, ConfirmPasswordResetInput
 from app.application.services.token_service import TokenService
-from app.infrastructure.notifications.email_service import EmailService
+from app.application.ports.email_service import EmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService, OTPInvalidError, TicketInvalidError
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.core.settings import settings

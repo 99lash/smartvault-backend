@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from app.infrastructure.notifications.email_service import EmailService
+from app.application.ports.email_service import EmailService
 
 
 @dataclass
