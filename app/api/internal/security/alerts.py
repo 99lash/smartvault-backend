@@ -37,7 +37,7 @@ from app.infrastructure.db.queries.security_metrics import (
     PIN_LOCKOUT_WARNING_THRESHOLD_24H,
     get_security_summary,
 )
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 
 router = APIRouter()
 

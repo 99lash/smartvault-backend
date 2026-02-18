@@ -12,7 +12,7 @@ from app.infrastructure.db.queries.business_metrics import (
     get_user_metrics,
     get_vault_metrics,
 )
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 
 router = APIRouter()
 

@@ -24,7 +24,7 @@ from app.infrastructure.db.queries.api_key_queries import (
     list_api_keys,
     revoke_api_key,
 )
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 
 router = APIRouter()
 

@@ -11,7 +11,7 @@ from app.infrastructure.db.queries.activity_queries import (
     get_activity_summary,
     get_recent_activity,
 )
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 
 router = APIRouter()
 

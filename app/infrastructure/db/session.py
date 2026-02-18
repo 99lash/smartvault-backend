@@ -19,12 +19,3 @@ def _get_sessionmaker():
 
 # Export SessionLocal for use in dependencies
 SessionLocal = _get_sessionmaker()
-
-
-def get_db():
-    """Provide database session for request."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
