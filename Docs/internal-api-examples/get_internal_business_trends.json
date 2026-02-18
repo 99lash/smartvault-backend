@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-02-16T00:00:00Z",
+  "period_days": 7,
+  "period_start": "2026-02-10",
+  "period_end": "2026-02-16",
+  "user_signups": {
+    "daily": [
+      {
+        "date": "2026-02-10",
+        "count": 0
+      },
+      {
+        "date": "2026-02-11",
+        "count": 0
+      }
+    ],
+    "total": 0,
+    "average_per_day": 0.0,
+    "peak_date": null,
+    "peak_count": 0,
+    "change_pct": null
+  },
+  "vault_provisioning": {
+    "daily": [
+      {
+        "date": "2026-02-10",
+        "count": 0
+      },
+      {
+        "date": "2026-02-11",
+        "count": 0
+      }
+    ],
+    "total": 0,
+    "average_per_day": 0.0,
+    "peak_date": null,
+    "peak_count": 0,
+    "change_pct": null
+  }
+}

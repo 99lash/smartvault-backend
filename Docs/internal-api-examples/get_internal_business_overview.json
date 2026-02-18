@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-02-16T00:00:00Z",
+  "users": {
+    "total": 0,
+    "new_today": 0,
+    "new_this_week": 0
+  },
+  "vaults": {
+    "total": 0,
+    "with_pin": 0,
+    "by_status": {}
+  },
+  "members": {
+    "total_authorizations": 0,
+    "by_role": {}
+  }
+}

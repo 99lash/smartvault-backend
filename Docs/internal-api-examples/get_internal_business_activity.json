@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-02-16T00:00:00Z",
+  "period_hours": 24,
+  "summary": {
+    "total_events": 0,
+    "vault_unlocks": 0,
+    "failed_unlocks": 0,
+    "pin_operations": 0,
+    "member_changes": 0,
+    "state_changes": 0
+  },
+  "entries": []
+}

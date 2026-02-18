@@ -12,6 +12,7 @@ Clean Architecture:
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -99,7 +100,7 @@ def get_websocket_diagnostics() -> WebSocketDiagnosticsResponse:
     summary="Database connection pool statistics",
 )
 def get_database_diagnostics(
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> DatabaseDiagnosticsResponse:
     metrics = system_metrics.get_database_pool_metrics(db)
     return DatabaseDiagnosticsResponse(

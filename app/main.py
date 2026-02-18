@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware.request_id import RequestIDMiddleware
 from app.api.router import api_router
@@ -8,6 +9,7 @@ from app.core.logging import get_logger, setup_logging
 from app.core.sentry import init_sentry
 from app.infrastructure.messaging.websocket_manager import manager
 from app.infrastructure.cache.redis_client import redis_startup, redis_shutdown
+from app.infrastructure.services.session_metrics import close_session_metrics_pool
 
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.infrastructure.monitoring.metrics import set_app_info
@@ -49,7 +51,8 @@ async def lifespan(app: FastAPI):
 
     await manager.stop()
     await redis_shutdown()
-    logger.info("websocket_manager_stopped")
+    close_session_metrics_pool()
+    logger.info("application_shutdown_complete")
 
 
 def create_app() -> FastAPI:
@@ -59,9 +62,20 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    cors_origins = list(
+        dict.fromkeys([*(settings.CORS_ORIGINS or []), "http://localhost:5173"])
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*", "X-Admin-Token"],
+        expose_headers=["X-Request-ID"],
+    )
     app.add_middleware(RequestIDMiddleware)
     app.include_router(api_router, prefix="/api")
-    
+
     # Only instrument if not already done to avoid duplicate metrics
     if not hasattr(app, "_instrumented"):
         get_instrumentator().instrument(app).expose(
@@ -75,7 +89,7 @@ def create_app() -> FastAPI:
         version=app.version,
         environment=settings.environment,
     )
-    
+
     return app
 
 
