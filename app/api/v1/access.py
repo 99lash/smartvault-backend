@@ -64,7 +64,7 @@ async def add_vault_member(
         if target_user is None:
             raise UserNotFoundError(payload.user_id)
     except UserNotFoundError as e:
-        logger.warning("user_not_found", error=str(e))
+        logger.warning("user_not_found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
     try:
@@ -92,14 +92,14 @@ async def add_vault_member(
         )
 
     except (VaultNotFoundError, UserNotFoundError) as e:
-        logger.warning("resource_not_found", error=str(e))
+        logger.warning("resource_not_found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
-        logger.warning("access_denied", error=str(e))
+        logger.warning("access_denied")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     except ValueError as e:
         # e.g., attempting to add the owner as a member
-        logger.warning("validation_error", error=str(e))
+        logger.warning("validation_error")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
 
 
@@ -127,13 +127,13 @@ async def remove_vault_member(
             ),
         )
     except (VaultNotFoundError, UserNotFoundError) as e:
-        logger.warning("resource_not_found", error=str(e))
+        logger.warning("resource_not_found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
-        logger.warning("access_denied", error=str(e))
+        logger.warning("access_denied")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     except CannotRemoveOwnerError as e:
-        logger.warning("validation_error", error=str(e))
+        logger.warning("validation_error")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
 
 
@@ -170,7 +170,7 @@ async def list_vault_members(
 
         if len(members) != len(result.members):
             missing_ids = set(user_ids) - set(users.keys())
-            logger.warning("resource_not_found", error=f"Missing user data for IDs: {', '.join(missing_ids)}")
+            logger.warning("resource_not_found", missing_user_count=len(missing_ids))
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
         return MemberListResponse(
@@ -179,8 +179,8 @@ async def list_vault_members(
         )
 
     except (VaultNotFoundError, UserNotFoundError) as e:
-        logger.warning("resource_not_found", error=str(e))
+        logger.warning("resource_not_found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     except (UnauthorizedVaultAccessError, InsufficientPermissionsError) as e:
-        logger.warning("access_denied", error=str(e))
+        logger.warning("access_denied")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
