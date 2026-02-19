@@ -41,7 +41,7 @@ def test_health_detailed_all_dependencies_healthy(client, vault_repo):
 
 
 def test_health_detailed_database_down(client):
-    """Detailed health returns unhealthy when database is down."""
+    """Detailed health returns 503 when database is down."""
     # Mock database to raise exception
     with patch('app.api.v1.health._check_database') as mock_check:
         mock_check.return_value = {
@@ -53,14 +53,14 @@ def test_health_detailed_database_down(client):
         
         response = client.get("/api/v1/health/detailed")
         
-        assert response.status_code == 200  # Still returns 200, but status is unhealthy
+        assert response.status_code == 503  # Returns 503 when unhealthy
         data = response.json()
         
         assert data["status"] == "unhealthy"
 
 
 def test_health_detailed_redis_down(client):
-    """Detailed health returns unhealthy when Redis is down."""
+    """Detailed health returns 503 when Redis is down."""
     # Mock Redis to raise exception
     with patch('app.api.v1.health._check_redis') as mock_check:
         mock_check.return_value = {
@@ -72,7 +72,7 @@ def test_health_detailed_redis_down(client):
         
         response = client.get("/api/v1/health/detailed")
         
-        assert response.status_code == 200
+        assert response.status_code == 503  # Returns 503 when unhealthy
         data = response.json()
         
         assert data["status"] == "unhealthy"
@@ -168,3 +168,22 @@ def test_health_endpoints_excluded_from_auth(client):
     
     response = client.get("/api/v1/health/detailed")
     assert response.status_code == 200
+
+
+def test_health_detailed_degraded_returns_200(client):
+    """Detailed health returns 200 when dependencies are degraded (not critical failure)."""
+    # Mock one dependency as degraded
+    with patch('app.api.v1.health._check_redis') as mock_check:
+        mock_check.return_value = {
+            "name": "redis",
+            "status": "degraded",
+            "latency_ms": 150.0,
+            "error": None,
+        }
+        
+        response = client.get("/api/v1/health/detailed")
+        
+        assert response.status_code == 200  # Degraded still returns 200
+        data = response.json()
+        
+        assert data["status"] == "degraded"
