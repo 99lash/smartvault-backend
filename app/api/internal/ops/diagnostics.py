@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 from app.infrastructure.db.queries import system_metrics
 from app.infrastructure.messaging import websocket_manager
 

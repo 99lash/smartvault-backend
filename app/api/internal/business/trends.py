@@ -22,7 +22,7 @@ from app.infrastructure.db.queries.business_trends import (
     get_user_signup_trend,
     get_vault_provisioning_trend,
 )
-from app.infrastructure.db.session import get_db
+from app.api.deps.db import get_db
 
 router = APIRouter()
 
