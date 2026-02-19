@@ -50,7 +50,16 @@ def _build_email_service() -> EmailService:
         base_service = DevEmailService()
     
     # Wrap with metrics tracking
-    return EmailNotificationService(base_service)
+    from app.infrastructure.notifications.email_metrics import (
+        increment_email_sent,
+        increment_email_failed,
+    )
+
+    return EmailNotificationService(
+        email_service=base_service,
+        on_sent=increment_email_sent,
+        on_failed=increment_email_failed,
+    )
 
 def get_email_service() -> EmailService:
     global _email_service

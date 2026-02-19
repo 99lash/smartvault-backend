@@ -10,7 +10,7 @@ Clean Architecture:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Awaitable
 
 if TYPE_CHECKING:
     from app.application.ports.email_service import EmailService
@@ -27,10 +27,29 @@ class EmailNotificationService:
     
     Args:
         email_service: Infrastructure implementation (SMTP, dev, etc.)
+        on_sent: Callback for successful email send (e.g. metrics increment)
+        on_failed: Callback for failed email send (e.g. metrics increment)
     """
 
-    def __init__(self, email_service: EmailService):
+    def __init__(
+        self,
+        email_service: EmailService,
+        on_sent: Callable[[], Awaitable[None]] | None = None,
+        on_failed: Callable[[], Awaitable[None]] | None = None,
+    ):
         self._email_service = email_service
+        self._on_sent = on_sent
+        self._on_failed = on_failed
+
+    async def _safe_callback(self, callback: Callable[[], Awaitable[None]] | None) -> None:
+        """Execute callback safely without raising exceptions."""
+        if not callback:
+            return
+        try:
+            await callback()
+        except Exception:
+            # Metrics failure should not block the application flow
+            log.exception("Failed to execute email notification callback")
 
     async def send_otp(self, to_email: str, otp: str) -> None:
         """
@@ -43,17 +62,13 @@ class EmailNotificationService:
         Raises:
             Exception: If email sending fails (metrics tracked before re-raise)
         """
-        from app.infrastructure.notifications.email_metrics import (
-            increment_email_sent,
-            increment_email_failed,
-        )
-
         try:
             await self._email_service.send_otp(to_email, otp)
-            await increment_email_sent()
+            await self._safe_callback(self._on_sent)
         except Exception as e:
-            await increment_email_failed()
-            log.error("Failed to send OTP email", extra={"error": str(e), "to": to_email})
+            await self._safe_callback(self._on_failed)
+            # Remove PII (email) from log
+            log.error("Failed to send OTP email", extra={"error": str(e)})
             raise
 
     async def send_password_reset_token(self, to_email: str, token: str) -> None:
@@ -67,15 +82,11 @@ class EmailNotificationService:
         Raises:
             Exception: If email sending fails (metrics tracked before re-raise)
         """
-        from app.infrastructure.notifications.email_metrics import (
-            increment_email_sent,
-            increment_email_failed,
-        )
-
         try:
             await self._email_service.send_password_reset_token(to_email, token)
-            await increment_email_sent()
+            await self._safe_callback(self._on_sent)
         except Exception as e:
-            await increment_email_failed()
-            log.error("Failed to send password reset email", extra={"error": str(e), "to": to_email})
+            await self._safe_callback(self._on_failed)
+            # Remove PII (email) from log
+            log.error("Failed to send password reset email", extra={"error": str(e)})
             raise
