@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,7 +10,20 @@ class Settings(BaseSettings):
     DEV_AUTH_BYPASS: bool = False
     DATABASE_URL: str = 'postgresql+psycopg://postgres:postgres@localhost:5432/smartvault'
     REDIS_URL: str = 'redis://redis:6379/0'
+    REDIS_TLS_URL: str | None = None
     CORS_ORIGINS: list[str] = []
+
+    @model_validator(mode='after')
+    def _normalize_urls(self) -> 'Settings':
+        # Heroku sets DATABASE_URL as postgres:// but SQLAlchemy needs postgresql+psycopg://
+        if self.DATABASE_URL.startswith('postgres://'):
+            self.DATABASE_URL = self.DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
+        elif self.DATABASE_URL.startswith('postgresql://'):
+            self.DATABASE_URL = self.DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+        # Heroku Redis premium uses REDIS_TLS_URL
+        if self.REDIS_TLS_URL:
+            self.REDIS_URL = self.REDIS_TLS_URL
+        return self
     
     # Security
     SECRET_KEY: str
