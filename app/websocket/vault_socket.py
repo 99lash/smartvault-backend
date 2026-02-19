@@ -45,8 +45,10 @@ async def websocket_user_endpoint(
     Authentication: JWT token in query parameter
     """
     
-    # Dummy auth for now (backward compatible)
-    user_id = get_current_user_id()
+    # Resolve user identity from WebSocket headers or query param
+    ws_headers = dict(websocket.headers)
+    dev_user = ws_headers.get("x-dev-user-id")
+    user_id = get_current_user_id(x_dev_user_id=dev_user)
     
     # Connect
     await manager.connect_user(websocket, user_id)
