@@ -7,7 +7,7 @@ Provides liveness and readiness probes for the service.
 import time
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -47,9 +47,9 @@ def health_check() -> HealthResponse:
     response_model=DetailedHealthResponse,
     summary="Detailed health check with dependencies",
     tags=["system"],
-    status_code=200,
 )
 async def detailed_health_check(
+    response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> DetailedHealthResponse:
     """
@@ -72,7 +72,7 @@ async def detailed_health_check(
     dependencies: list[DependencyHealth] = []
 
     # Check PostgreSQL
-    db_health = await _check_database(db)
+    db_health = _check_database(db)
     if isinstance(db_health, dict):
         # Apply truncation for mock compatibility
         if db_health.get("error") and len(db_health["error"]) > 100:
@@ -99,13 +99,19 @@ async def detailed_health_check(
     else:
         overall_status = "degraded"
 
+    # Set HTTP status code based on health
+    # 503 Service Unavailable for critical dependency failures
+    # 200 OK for healthy or degraded states
+    if overall_status == "unhealthy":
+        response.status_code = 503
+
     return DetailedHealthResponse(
         status=overall_status,
         dependencies=dependencies,
     )
 
 
-async def _check_database(db: Session) -> DependencyHealth:
+def _check_database(db: Session) -> DependencyHealth:
     """
     Check PostgreSQL database connectivity.
 
