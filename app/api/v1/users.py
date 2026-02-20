@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps.users import get_get_me_uc, get_update_me_uc
+from app.api.deps.users import get_get_me_uc, get_update_me_uc, get_user_repo
 from app.api.deps.auth import get_current_user_id
+from app.application.ports.user_repository import UserRepository
 from app.application.use_cases.get_me import GetMe
 from app.application.use_cases.update_me import UpdateMe
-from app.schemas.users import UserResponse, UpdateMeRequest
+from app.schemas.users import UserResponse, UpdateMeRequest, UserSearchResult
 from app.api.deps.users import get_create_user_uc
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
 from app.schemas.users import CreateUserRequest, UserResponse
@@ -53,3 +54,19 @@ async def update_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse.model_validate(user)
+
+
+@router.get("/search", response_model=UserSearchResult)
+async def search_user_by_email(
+    email: str,
+    _: str = Depends(get_current_user_id),
+    repo: UserRepository = Depends(get_user_repo),
+) -> UserSearchResult:
+    user = repo.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserSearchResult(
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+    )

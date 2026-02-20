@@ -19,3 +19,11 @@ class UserResponse(BaseModel):
 
 class UpdateMeRequest(BaseModel):
     full_name: str | None = Field(default=None, max_length=200)
+
+
+class UserSearchResult(BaseModel):
+    user_id: str
+    email: str
+    full_name: str | None
+
+    model_config = ConfigDict(from_attributes=True)
