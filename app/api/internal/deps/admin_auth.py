@@ -34,19 +34,19 @@ def require_admin_token(
         HTTPException 503: Admin API not configured.
         HTTPException 401: Missing or invalid token.
     """
-    if not settings.ADMIN_API_TOKEN:
-        logger.warning("admin_api_not_configured")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Admin API is not configured",
-        )
-
     if not token:
         logger.warning("admin_token_missing")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Admin token required",
             headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if not settings.ADMIN_API_TOKEN:
+        logger.warning("admin_api_not_configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin API is not configured",
         )
 
     is_valid = secrets.compare_digest(
