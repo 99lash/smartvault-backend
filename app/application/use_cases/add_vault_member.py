@@ -78,8 +78,7 @@ class AddVaultMember:
                 inp.target_user_id,
                 inp.role,
             )
-            if updated is None:
-                track_vault_member_added(role=inp.role.value)
+            if not updated:
                 raise RuntimeError("Authorization missing during role update")
 
             track_vault_member_added(role=inp.role.value)
@@ -100,7 +99,7 @@ class AddVaultMember:
                 except Exception:
                     pass
 
-            return AddVaultMemberResult(authorization=updated or existing)
+            return AddVaultMemberResult(authorization=updated)
 
         auth = VaultAuthorization(
             id=f"vaultauth_{uuid4()}",
