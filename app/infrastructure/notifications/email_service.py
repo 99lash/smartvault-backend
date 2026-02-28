@@ -1,9 +1,16 @@
+"""
+Email service implementations.
+
+Provides concrete adapters for different email backends (SMTP, Dev).
+
+Clean Architecture:
+    Infrastructure layer — implements EmailService port from application layer.
+"""
 from __future__ import annotations
 
 import logging
 from email.message import EmailMessage
 from email.utils import formataddr
-from typing import Protocol, runtime_checkable
 
 try:
     import aiosmtplib  # type: ignore
@@ -11,15 +18,6 @@ except ImportError:  # pragma: no cover - only hit when optional dep missing
     aiosmtplib = None  # type: ignore
 
 log = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class EmailService(Protocol):
-    async def send_otp(self, to_email: str, otp: str) -> None:
-        ...
-
-    async def send_password_reset_token(self, to_email: str, token: str) -> None:
-        ...
 
 
 class DevEmailService:

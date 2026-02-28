@@ -63,7 +63,10 @@ def _zero_fill(
     Returns:
         List of DailyCount covering every day in the window.
     """
-    counts: dict[str, int] = {row.day: row.count for row in db_rows}
+    counts: dict[str, int] = {
+        (row.day.strftime("%Y-%m-%d") if hasattr(row.day, "strftime") else str(row.day)): row.count
+        for row in db_rows
+    }
     daily: list[DailyCount] = []
     current = start
     while current <= end:

@@ -110,8 +110,12 @@ reset: db-reset redis-flush migrate current
 seed:
 	docker compose exec $(SERVICE) python seed.py
 
-# DEV ONLY: reset DB + re-seed
-reseed: db-reset redis-flush migrate seed
+# Seed Redis with fake sessions, rate limits, email counters
+seed-redis:
+	docker compose exec $(SERVICE) python seed.py --redis
+
+# DEV ONLY: reset DB + re-seed (Postgres + Redis)
+reseed: db-reset redis-flush migrate seed seed-redis
 
 
 # --- Unit Test Helpers ---

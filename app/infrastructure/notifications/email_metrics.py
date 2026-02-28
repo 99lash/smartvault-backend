@@ -39,6 +39,7 @@ class EmailMetrics:
     status: str
     sent_today: int
     failed_today: int
+    note: str | None
 
 
 async def get_email_metrics() -> EmailMetrics:
@@ -61,6 +62,7 @@ async def get_email_metrics() -> EmailMetrics:
         status="healthy",
         sent_today=int(sent_raw) if sent_raw else 0,
         failed_today=int(failed_raw) if failed_raw else 0,
+        note=None,
     )
 
 

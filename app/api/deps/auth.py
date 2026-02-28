@@ -1,6 +1,8 @@
 from app.core.settings import settings
 from redis import Redis
-from app.infrastructure.notifications.email_service import DevEmailService, EmailService, SMTPEmailService
+from app.application.ports.email_service import EmailService
+from app.application.services.email_notification_service import EmailNotificationService
+from app.infrastructure.notifications.email_service import DevEmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
 from app.infrastructure.services.password_reset_service import PasswordResetService
 from app.infrastructure.security.rate_limiter import RateLimiter
@@ -26,6 +28,7 @@ def get_refresh_token_store() -> RedisRefreshTokenStore:
     return RedisRefreshTokenStore(redis)
 
 def _build_email_service() -> EmailService:
+    """Build email service with metrics tracking."""
     backend = settings.resolved_email_backend.lower()
     if backend == "smtp":
         if not settings.SMTP_HOST:
@@ -34,7 +37,7 @@ def _build_email_service() -> EmailService:
         if not from_email:
             raise ValueError("SMTP_FROM_EMAIL or SMTP_USER must be set for SMTP email backend")
 
-        return SMTPEmailService(
+        base_service = SMTPEmailService(
             host=settings.SMTP_HOST,
             port=settings.SMTP_PORT or 587,
             username=settings.SMTP_USER,
@@ -43,7 +46,20 @@ def _build_email_service() -> EmailService:
             from_name=settings.SMTP_FROM_NAME,
             use_tls=True,
         )
-    return DevEmailService()
+    else:
+        base_service = DevEmailService()
+    
+    # Wrap with metrics tracking
+    from app.infrastructure.notifications.email_metrics import (
+        increment_email_sent,
+        increment_email_failed,
+    )
+
+    return EmailNotificationService(
+        email_service=base_service,
+        on_sent=increment_email_sent,
+        on_failed=increment_email_failed,
+    )
 
 def get_email_service() -> EmailService:
     global _email_service

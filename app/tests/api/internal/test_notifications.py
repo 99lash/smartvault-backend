@@ -33,6 +33,7 @@ def test_email_status_returns_metrics(admin_client):
         status="healthy",
         sent_today=42,
         failed_today=1,
+        note=None,
     ))
 
     with patch(_PATCH_TARGET, mock):
@@ -54,7 +55,7 @@ def test_email_status_returns_metrics(admin_client):
 def test_email_status_returns_zeros_when_no_sends(admin_client):
     """Email status returns 0 counts before any emails are sent."""
     mock = AsyncMock(return_value=EmailMetrics(
-        service="smtp", status="healthy", sent_today=0, failed_today=0
+        service="smtp", status="healthy", sent_today=0, failed_today=0, note=None
     ))
 
     with patch(_PATCH_TARGET, mock):

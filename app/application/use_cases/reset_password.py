@@ -5,7 +5,7 @@ from typing import Protocol
 
 from app.application.ports.user_repository import UserRepository
 from app.infrastructure.services.password_reset_service import PasswordResetService
-from app.infrastructure.notifications.email_service import EmailService
+from app.application.ports.email_service import EmailService
 
 
 class PasswordHasher(Protocol):
