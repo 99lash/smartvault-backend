@@ -81,3 +81,7 @@ class SqlAlchemyActivityLogRepository(ActivityLogRepository):
             .where(AccessLogORM.created_at >= since)
         )
         return result or 0
+
+    def delete_by_vault_id(self, vault_id: str) -> None:
+        self._session.query(AccessLogORM).filter(AccessLogORM.vault_id == vault_id).delete()
+        self._session.commit()

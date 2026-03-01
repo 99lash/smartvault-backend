@@ -10,10 +10,12 @@ ActivityAction = Literal[
     "VAULT_UNLOCKED",
     "VAULT_UNLOCK_FAILED",
     "VAULT_STATE_CHANGED",
+    "VAULT_RESET",
     "UNLOCK_COMMAND_SENT",
     "PIN_SET",
     "MEMBER_ADDED",
     "MEMBER_REMOVED",
+    "TAMPER_DETECTED",
 ]
 
 # All valid method types describing how the action was triggered.
