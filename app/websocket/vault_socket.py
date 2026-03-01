@@ -154,25 +154,92 @@ async def websocket_user_endpoint(
 async def websocket_vault_endpoint(
     websocket: WebSocket,
     hardware_uuid: str = Query(..., description="Vault hardware UUID"),
-    vault_secret: str = Query(..., description="Pre-shared vault secret"),
     repo: VaultRepository = Depends(get_vault_repo),
 ):
     """
     WebSocket endpoint for vault devices (ESP32 hardware).
-    
-    Devices can:
-    - Receive unlock/lock commands
-    - Send state updates
-    - Send heartbeats
-    - Report tamper events
-    
-    Authentication: Hardware UUID + pre-shared secret
+
+    Identified by hardware_uuid query param (no auth - firmware has no JWT).
+    Firmware sends: heartbeat, state_update, ack
+    Backend sends: remote_unlock, buzzer_off, reset
     """
-    
-    raise WebSocketException(
-        code=status.WS_1008_POLICY_VIOLATION,
-        reason="Vault device websocket not wired yet",
+    from app.api.deps.common import get_db_session
+    from app.infrastructure.db.repositories.sqlalchemy_activity_log_repository import (
+        SqlAlchemyActivityLogRepository,
     )
+    from app.application.use_cases.process_vault_state_update import ProcessVaultStateUpdate
+
+    # 1. Look up vault by hardware_uuid
+    vault = repo.get_by_hardware_uuid(hardware_uuid)
+    if vault is None:
+        await websocket.close(code=4004, reason="Device not registered")
+        return
+
+    vault_id = vault.id
+
+    # 2. Register connection
+    await manager.connect_vault(websocket, vault_id)
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+
+            try:
+                message = json.loads(data)
+                msg_type = message.get("type")
+
+                if msg_type == "heartbeat":
+                    # Update heartbeat timestamp
+                    manager.last_heartbeat[vault_id] = datetime.now(timezone.utc)
+                    logger.debug(f"Heartbeat from vault {vault_id}")
+
+                elif msg_type == "state_update":
+                    new_status = message.get("status")
+                    if new_status:
+                        try:
+                            # Get a fresh DB session for this operation
+                            from app.infrastructure.db.session import SessionLocal
+
+                            db = SessionLocal()
+                            try:
+                                from app.infrastructure.db.repositories.sqlalchemy_vault_repository import (
+                                    SqlAlchemyVaultRepository,
+                                )
+                                from app.infrastructure.db.repositories.sqlalchemy_activity_log_repository import (
+                                    SqlAlchemyActivityLogRepository,
+                                )
+
+                                vault_repo_fresh = SqlAlchemyVaultRepository(db)
+                                log_repo = SqlAlchemyActivityLogRepository(db)
+                                uc = ProcessVaultStateUpdate(vault_repo_fresh, log_repo)
+                                await uc.execute(
+                                    vault_id=vault_id,
+                                    new_status=new_status,
+                                    metadata={"source": "firmware", "hardware_uuid": hardware_uuid},
+                                )
+                            finally:
+                                db.close()
+                        except Exception as e:
+                            logger.error(f"State update failed for vault {vault_id}: {e}")
+
+                elif msg_type == "ack":
+                    command = message.get("command")
+                    logger.info(f"Vault {vault_id} acked command: {command}")
+
+                else:
+                    logger.warning(f"Unknown message type from vault {vault_id}: {msg_type}")
+
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON from vault {vault_id}")
+
+    except WebSocketDisconnect:
+        logger.info(f"Vault {vault_id} disconnected")
+
+    except Exception as e:
+        logger.error(f"WebSocket error for vault {vault_id}: {e}")
+
+    finally:
+        manager.disconnect_vault(websocket, vault_id)
 
 
 # ============================================
