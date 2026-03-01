@@ -7,8 +7,10 @@ from app.api.deps.auth import get_current_user_id, get_rate_limiter
 from app.api.deps.users import get_current_user
 from app.api.deps.vaults import (
     get_check_vault_access_uc,
+    get_generate_provisioning_token_uc,
     get_list_user_vaults_uc,
     get_remove_vault_pin_uc,
+    get_reset_vault_uc,
     get_send_unlock_command_uc,
     get_set_vault_pin_uc,
     get_unlock_with_pin_uc,
@@ -22,7 +24,9 @@ from app.application.use_cases.provision_vault import (
     HardwareAlreadyProvisioned,
     ProvisionVault,
 )
+from app.application.use_cases.generate_provisioning_token import GenerateProvisioningToken
 from app.application.use_cases.remove_vault_pin import RemoveVaultPIN, RemoveVaultPINInput
+from app.application.use_cases.reset_vault import ResetVault
 from app.application.use_cases.send_unlock_command import SendUnlockCommand, VaultOfflineError
 from app.application.use_cases.set_vault_pin import SetVaultPIN, SetVaultPINInput
 from app.application.use_cases.unlock_vault_with_pin import (
@@ -48,8 +52,10 @@ from app.schemas.pin import (
     UnlockWithPINResponse,
 )
 from app.schemas.vaults import (
+    ProvisioningTokenResponse,
     ProvisionVaultRequest,
     ProvisionVaultResponse,
+    ResetVaultResponse,
     UnlockCommandResponse,
     VaultAccessRoleEnum,
     VaultListItemResponse,
@@ -317,3 +323,51 @@ async def unlock_vault_with_pin(
     except InvalidPINError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
+
+@router.post(
+    "/vaults/provisioning-token",
+    response_model=ProvisioningTokenResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def generate_provisioning_token(
+    current_user_id: str = Depends(get_current_user_id),
+    uc: GenerateProvisioningToken = Depends(get_generate_provisioning_token_uc),
+) -> ProvisioningTokenResponse:
+    from app.application.use_cases.generate_provisioning_token import GenerateProvisioningTokenInput
+
+    token = await run_in_threadpool(
+        uc.execute,
+        GenerateProvisioningTokenInput(user_id=current_user_id),
+    )
+    return ProvisioningTokenResponse(provisioning_token=token)
+
+
+@router.post(
+    "/vaults/{vault_id}/reset",
+    response_model=ResetVaultResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def reset_vault(
+    vault_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    uc: ResetVault = Depends(get_reset_vault_uc),
+) -> ResetVaultResponse:
+    from app.application.use_cases.reset_vault import (
+        ResetVaultInput,
+        UnauthorizedVaultAccessError as ResetVaultUnauthorizedError,
+        VaultNotFoundError as ResetVaultNotFoundError,
+    )
+
+    try:
+        await run_in_threadpool(
+            uc.execute,
+            ResetVaultInput(vault_id=vault_id, requesting_user_id=current_user_id),
+        )
+        return ResetVaultResponse(reset=True)
+    except ResetVaultNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault not found")
+    except ResetVaultUnauthorizedError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the vault owner can reset the vault",
+        )

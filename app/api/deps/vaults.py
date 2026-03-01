@@ -11,12 +11,19 @@ from app.application.use_cases.add_vault_member import AddVaultMember
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.list_vault_members import ListVaultMembers
 from app.application.use_cases.list_user_vaults import ListUserVaults
+from app.application.use_cases.generate_provisioning_token import GenerateProvisioningToken
 from app.application.use_cases.log_activity import LogActivity
+from app.application.use_cases.register_device import RegisterDevice
 from app.application.use_cases.remove_vault_member import RemoveVaultMember
 from app.application.use_cases.remove_vault_pin import RemoveVaultPIN
+from app.application.use_cases.reset_vault import ResetVault
 from app.application.use_cases.send_unlock_command import SendUnlockCommand
 from app.application.use_cases.set_vault_pin import SetVaultPIN
 from app.application.use_cases.unlock_vault_with_pin import UnlockVaultWithPIN
+from app.infrastructure.db.repositories.sqlalchemy_activity_log_repository import (
+    SqlAlchemyActivityLogRepository,
+)
+from app.infrastructure.db.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from app.infrastructure.db.repositories.sqlalchemy_vault_authorization_repository import (
     SqlAlchemyVaultAuthorizationRepository,
 )
@@ -117,3 +124,31 @@ def get_unlock_with_pin_uc(
     log_activity: LogActivity = Depends(get_log_activity_uc),  # NEW
 ) -> UnlockVaultWithPIN:
     return UnlockVaultWithPIN(vault_repo, hasher, tracker, log_activity)
+
+
+def get_user_repo(db: Session = Depends(get_db_session)) -> SqlAlchemyUserRepository:
+    return SqlAlchemyUserRepository(db)
+
+
+def get_activity_log_repo(db: Session = Depends(get_db_session)) -> SqlAlchemyActivityLogRepository:
+    return SqlAlchemyActivityLogRepository(db)
+
+
+def get_generate_provisioning_token_uc(
+    user_repo=Depends(get_user_repo),
+) -> GenerateProvisioningToken:
+    return GenerateProvisioningToken(user_repo)
+
+
+def get_register_device_uc(
+    user_repo=Depends(get_user_repo),
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+) -> RegisterDevice:
+    return RegisterDevice(user_repo, vault_repo)
+
+
+def get_reset_vault_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+    log_repo=Depends(get_activity_log_repo),
+) -> ResetVault:
+    return ResetVault(vault_repo, log_repo, _ws_manager)

@@ -45,3 +45,38 @@ class VaultListItemResponse(BaseModel):
     last_seen_at: datetime | None
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class ProvisioningTokenResponse(BaseModel):
+    provisioning_token: str
+
+
+class ResetVaultResponse(BaseModel):
+    reset: bool
+
+
+class RegisterDeviceRequest(BaseModel):
+    hardware_uuid: str
+    provisioning_token: str
+
+
+class RegisterDeviceResponse(BaseModel):
+    vault_id: str
+    vault_name: str | None = None
+
+
+class VerifyPINRequest(BaseModel):
+    hardware_uuid: str
+    pin: str
+
+
+class VerifyPINResponse(BaseModel):
+    unlocked: bool
+
+
+class TamperAlertRequest(BaseModel):
+    hardware_uuid: str
+
+
+class TamperAlertResponse(BaseModel):
+    received: bool
