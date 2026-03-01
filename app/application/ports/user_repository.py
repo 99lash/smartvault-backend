@@ -31,3 +31,15 @@ class UserRepository(ABC):
     @abstractmethod
     def update_password(self, user_id: str, password_hash: str) -> User | None:
         raise NotImplementedError
+
+    @abstractmethod
+    def get_by_provisioning_token(self, token: str) -> User | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_provisioning_token(self, user_id: str, token: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def clear_provisioning_token(self, user_id: str) -> None:
+        raise NotImplementedError

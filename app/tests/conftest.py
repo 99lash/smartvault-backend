@@ -208,6 +208,26 @@ class _FakeUserRepo(UserRepository):
         self.save(updated)
         return updated
 
+    def get_by_provisioning_token(self, token: str):
+        for user in self._by_id.values():
+            if user.provisioning_token == token:
+                return user
+        return None
+
+    def set_provisioning_token(self, user_id: str, token: str) -> None:
+        user = self.get_by_id(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+        updated = replace(user, provisioning_token=token)
+        self.save(updated)
+
+    def clear_provisioning_token(self, user_id: str) -> None:
+        user = self.get_by_id(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+        updated = replace(user, provisioning_token=None)
+        self.save(updated)
+
 
 class _NoopRateLimiter:
     async def allow_request(self, *args, **kwargs):
