@@ -22,7 +22,6 @@ from app.application.use_cases.register_device import (
 )
 from app.application.use_cases.unlock_vault_with_pin import UnlockVaultWithPIN, UnlockVaultWithPINInput
 from app.domain.exceptions import InvalidPINError, PINLockedOutError, PINNotSetError
-from app.domain.models.access_log import ActivityAction, ActivityMethod
 from app.schemas.vaults import (
     RegisterDeviceRequest,
     RegisterDeviceResponse,
@@ -111,8 +110,8 @@ async def tamper_alert(
         log_activity.execute,
         LogActivityInput(
             vault_id=vault.id,
-            action=ActivityAction.TAMPER_DETECTED,
-            method=ActivityMethod.SYSTEM,
+            action="TAMPER_DETECTED",
+            method="SYSTEM",
             user_id=None,
             metadata={"hardware_uuid": payload.hardware_uuid},
         ),
