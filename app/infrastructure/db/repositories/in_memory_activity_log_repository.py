@@ -55,3 +55,6 @@ class InMemoryActivityLogRepository(ActivityLogRepository):
             1 for l in self._logs
             if l.action == action and l.created_at >= since
         )
+
+    def delete_by_vault_id(self, vault_id: str) -> None:
+        self._logs = [log for log in self._logs if log.vault_id != vault_id]

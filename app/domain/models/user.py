@@ -14,3 +14,4 @@ class User:
     password_hash: str
     full_name: str | None
     created_at: datetime
+    provisioning_token: str | None = None

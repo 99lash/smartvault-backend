@@ -50,6 +50,10 @@ class ActivityLogRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_by_vault_id(self, vault_id: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def count_recent_by_action(
         self,
         action: str,

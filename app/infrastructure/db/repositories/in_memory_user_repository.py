@@ -54,3 +54,21 @@ class InMemoryUserRepository(UserRepository):
 
     def get_by_ids(self, user_ids: list[str]) -> dict[str, User]:
         return {uid: user for uid, user in self._by_id.items() if uid in user_ids}
+
+    def get_by_provisioning_token(self, token: str) -> User | None:
+        for user in self._by_id.values():
+            if user.provisioning_token == token:
+                return user
+        return None
+
+    def set_provisioning_token(self, user_id: str, token: str) -> None:
+        user = self._by_id.get(user_id)
+        if user is None:
+            raise ValueError(f"User {user_id} not found")
+        self.save(replace(user, provisioning_token=token))
+
+    def clear_provisioning_token(self, user_id: str) -> None:
+        user = self._by_id.get(user_id)
+        if user is None:
+            raise ValueError(f"User {user_id} not found")
+        self.save(replace(user, provisioning_token=None))
