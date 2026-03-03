@@ -73,7 +73,36 @@ class UnlockVaultWithPIN:
                 ))
                 raise PINLockedOutError(inp.vault_id, attempts_remaining=0)
 
-            pin = PIN(inp.pin)
+            try:
+                pin = PIN(inp.pin)
+            except InvalidPINError:
+                result, remaining = await self._tracker.register_failure(inp.vault_id)
+                if result is PINAttemptResult.LOCKED_OUT:
+                    track_pin_lockout()
+                    self._log(LogActivityInput(
+                        vault_id=inp.vault_id,
+                        user_id=inp.user_id,
+                        action="VAULT_UNLOCK_FAILED",
+                        method="PIN",
+                        metadata={"reason": "max_attempts_reached", "lockout": True},
+                    ))
+                    raise PINLockedOutError(inp.vault_id, attempts_remaining=0)
+
+                self._log(LogActivityInput(
+                    vault_id=inp.vault_id,
+                    user_id=inp.user_id,
+                    action="VAULT_UNLOCK_FAILED",
+                    method="PIN",
+                    metadata={
+                        "reason": "invalid_pin_format",
+                        "attempts_remaining": remaining,
+                        "lockout": False,
+                    },
+                ))
+                message = "Invalid PIN"
+                if remaining is not None:
+                    message = f"{message}. Attempts remaining: {remaining}"
+                raise InvalidPINError(message)
 
             if not self._hasher.verify(pin, vault.pin_hash):
                 result, remaining = await self._tracker.register_failure(inp.vault_id)

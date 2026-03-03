@@ -60,6 +60,8 @@ class ProcessVaultStateUpdate:
             vault_name=vault.vault_name,
             status=VaultStatus(new_status),
             last_seen_at=datetime.now(timezone.utc),
+            pin_hash=vault.pin_hash,
+            pin_set_at=vault.pin_set_at,
         )
 
         # Save to repository
