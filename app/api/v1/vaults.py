@@ -20,11 +20,7 @@ from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.get_vault_status import GetVaultStatus, GetVaultStatusInput
 from app.application.use_cases.list_user_vaults import ListUserVaults
-from app.application.use_cases.provision_vault import (
-    HardwareAlreadyProvisioned,
-    ProvisionVault,
-)
-from app.application.use_cases.generate_provisioning_token import GenerateProvisioningToken
+from app.application.use_cases.generate_provisioning_token import GenerateProvisioningToken, GenerateProvisioningTokenInput
 from app.application.use_cases.remove_vault_pin import RemoveVaultPIN, RemoveVaultPINInput
 from app.application.use_cases.reset_vault import ResetVault
 from app.application.use_cases.send_unlock_command import SendUnlockCommand, VaultOfflineError
@@ -53,8 +49,6 @@ from app.schemas.pin import (
 )
 from app.schemas.vaults import (
     ProvisioningTokenResponse,
-    ProvisionVaultRequest,
-    ProvisionVaultResponse,
     ResetVaultResponse,
     UnlockCommandResponse,
     VaultAccessRoleEnum,
@@ -92,34 +86,6 @@ def list_user_vaults(
 
     return items
 
-
-@router.post(
-    "/vaults/provision",
-    response_model=ProvisionVaultResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def provision_vault(
-    payload: ProvisionVaultRequest,
-    owner_id: str = Depends(get_current_user_id),
-    repo: VaultRepository = Depends(get_vault_repo),
-) -> ProvisionVaultResponse:
-    use_case = ProvisionVault(repo)
-    try:
-        result = use_case.execute(
-            owner_id=owner_id,
-            hardware_uuid=payload.hardware_uuid,
-            vault_name=payload.vault_name,
-        )
-    except HardwareAlreadyProvisioned:
-        raise HTTPException(status_code=409, detail="Hardware already provisioned")
-
-    v = result.vault
-    return ProvisionVaultResponse(
-        vault_id=v.id,
-        hardware_uuid=v.hardware_uuid,
-        vault_name=v.vault_name,
-        status=v.status,
-    )
 
 
 @router.get("/vaults/{vault_id}/status", response_model=VaultStatusResponse)
@@ -333,12 +299,7 @@ async def generate_provisioning_token(
     current_user_id: str = Depends(get_current_user_id),
     uc: GenerateProvisioningToken = Depends(get_generate_provisioning_token_uc),
 ) -> ProvisioningTokenResponse:
-    from app.application.use_cases.generate_provisioning_token import GenerateProvisioningTokenInput
-
-    token = await run_in_threadpool(
-        uc.execute,
-        GenerateProvisioningTokenInput(user_id=current_user_id),
-    )
+    token = await uc.execute(GenerateProvisioningTokenInput(user_id=current_user_id))
     return ProvisioningTokenResponse(provisioning_token=token)
 
 

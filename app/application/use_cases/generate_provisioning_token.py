@@ -2,21 +2,21 @@
 Generate a provisioning token for a user.
 
 The token is used during firmware captive portal provisioning.
-Format: 6 digits + 2 uppercase letters (e.g. 482931KZ)
-Single-use — cleared after device registration.
+Format: 6 digits only (e.g. 482931) — matches ESP32 captive portal input.
+Single-use — expires after 5 minutes via Redis TTL.
 """
 from __future__ import annotations
 
-import random
-import string
+import secrets
 from dataclasses import dataclass
 
-from app.application.ports.user_repository import UserRepository
+from app.application.ports.provisioning_token_store import ProvisioningTokenStore
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 MAX_RETRIES = 10
+TOKEN_TTL_SECONDS = 300
 
 
 @dataclass
@@ -25,17 +25,13 @@ class GenerateProvisioningTokenInput:
 
 
 class GenerateProvisioningToken:
-    def __init__(self, user_repo: UserRepository) -> None:
-        self._user_repo = user_repo
+    def __init__(self, token_store: ProvisioningTokenStore) -> None:
+        self._token_store = token_store
 
-    def execute(self, input: GenerateProvisioningTokenInput) -> str:
+    async def execute(self, input: GenerateProvisioningTokenInput) -> str:
         for attempt in range(MAX_RETRIES):
-            digits = "".join(random.choices(string.digits, k=6))
-            letters = "".join(random.choices(string.ascii_uppercase, k=2))
-            token = digits + letters
-
-            if self._user_repo.get_by_provisioning_token(token) is None:
-                self._user_repo.set_provisioning_token(input.user_id, token)
+            token = f"{secrets.randbelow(1_000_000):06d}"
+            if await self._token_store.set(token, input.user_id, TOKEN_TTL_SECONDS):
                 logger.info(
                     "provisioning_token_generated",
                     user_id=input.user_id,

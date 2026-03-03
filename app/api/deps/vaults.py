@@ -28,6 +28,7 @@ from app.infrastructure.db.repositories.sqlalchemy_vault_authorization_repositor
     SqlAlchemyVaultAuthorizationRepository,
 )
 from app.infrastructure.db.repositories.sqlalchemy_vault_repository import SqlAlchemyVaultRepository
+from app.infrastructure.cache.provisioning_token_store import RedisProvisioningTokenStore
 from app.infrastructure.messaging.websocket_manager import WebSocketManager
 from app.infrastructure.security.pin_attempt_tracker import RedisPINAttemptTracker
 from app.infrastructure.security.pin_hasher import PBKDF2PINHasher
@@ -35,6 +36,7 @@ from app.infrastructure.security.pin_hasher import PBKDF2PINHasher
 _pin_hasher = PBKDF2PINHasher()
 _pin_attempt_tracker = RedisPINAttemptTracker()
 _ws_manager = WebSocketManager()
+_provisioning_token_store = RedisProvisioningTokenStore()
 
 
 def get_vault_repo(db: Session = Depends(get_db_session)) -> VaultRepository:
@@ -134,17 +136,22 @@ def get_activity_log_repo(db: Session = Depends(get_db_session)) -> SqlAlchemyAc
     return SqlAlchemyActivityLogRepository(db)
 
 
+def get_provisioning_token_store() -> RedisProvisioningTokenStore:
+    return _provisioning_token_store
+
+
 def get_generate_provisioning_token_uc(
-    user_repo=Depends(get_user_repo),
+    token_store: RedisProvisioningTokenStore = Depends(get_provisioning_token_store),
 ) -> GenerateProvisioningToken:
-    return GenerateProvisioningToken(user_repo)
+    return GenerateProvisioningToken(token_store)
 
 
 def get_register_device_uc(
+    token_store: RedisProvisioningTokenStore = Depends(get_provisioning_token_store),
     user_repo=Depends(get_user_repo),
     vault_repo: VaultRepository = Depends(get_vault_repo),
 ) -> RegisterDevice:
-    return RegisterDevice(user_repo, vault_repo)
+    return RegisterDevice(token_store, user_repo, vault_repo)
 
 
 def get_reset_vault_uc(
