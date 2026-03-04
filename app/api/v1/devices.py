@@ -44,12 +44,11 @@ async def register_device(
     uc: RegisterDevice = Depends(get_register_device_uc),
 ) -> RegisterDeviceResponse:
     try:
-        result = await run_in_threadpool(
-            uc.execute,
+        result = await uc.execute(
             RegisterDeviceInput(
                 hardware_uuid=payload.hardware_uuid,
                 provisioning_token=payload.provisioning_token,
-            ),
+            )
         )
         return RegisterDeviceResponse(vault_id=result.vault_id, vault_name=result.vault_name)
     except InvalidProvisioningTokenError:

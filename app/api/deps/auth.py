@@ -11,14 +11,14 @@ from app.application.use_cases.reset_password import RequestPasswordReset, Confi
 from app.infrastructure.services.refresh_token_store import RedisRefreshTokenStore
 from app.api.deps.users import get_user_repo, get_password_hasher
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 
 _email_service: EmailService | None = None
 _otp_ticket_service = OTPTicketService()
 _password_reset_service = PasswordResetService()
 _rate_limiter = RateLimiter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = HTTPBearer()
 
 def get_redis_client() -> Redis:
     return Redis.from_url(settings.REDIS_URL, decode_responses=False)
@@ -94,7 +94,8 @@ def get_confirm_password_reset_uc(
 ) -> ConfirmPasswordReset:
     return ConfirmPasswordReset(repo, reset_svc, hasher)
 
-def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)) -> str:
+    token = credentials.credentials
     # 1. Test Bypass (Critical for acceptance criteria)
     if settings.DEV_AUTH_BYPASS:
         return "test-user-id"

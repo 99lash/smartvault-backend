@@ -26,8 +26,23 @@ class ProvisionVault:
         hardware_uuid: str,
         vault_name: str | None,
     ) -> ProvisionVaultResult:
-        if self._repo.get_by_hardware_uuid(hardware_uuid) is not None:
-            raise HardwareAlreadyProvisioned
+        existing = self._repo.get_by_hardware_uuid(hardware_uuid)
+        if existing is not None:
+            if existing.status != VaultStatus.PROVISIONING:
+                raise HardwareAlreadyProvisioned
+            # Re-provision in-place: vault was reset, same device re-registering
+            reprovisioned = Vault(
+                id=existing.id,
+                owner_id=owner_id,
+                hardware_uuid=hardware_uuid,
+                vault_name=vault_name or existing.vault_name,
+                status=VaultStatus.LOCKED,
+                last_seen_at=None,
+                pin_hash=None,
+                pin_set_at=None,
+            )
+            updated = self._repo.update(reprovisioned)
+            return ProvisionVaultResult(vault=updated)
 
         vault = Vault.provisioned(
             id=f"vault_{uuid4()}",

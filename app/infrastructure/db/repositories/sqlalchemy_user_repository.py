@@ -20,7 +20,6 @@ class SqlAlchemyUserRepository(UserRepository):
             password_hash=orm.password_hash,
             full_name=orm.full_name,
             created_at=orm.created_at,
-            provisioning_token=orm.provisioning_token,
         )
 
     def save(self, user: User) -> None:
@@ -30,7 +29,6 @@ class SqlAlchemyUserRepository(UserRepository):
             password_hash=user.password_hash,
             full_name=user.full_name,
             created_at=user.created_at,
-            provisioning_token=user.provisioning_token,
         )
         self._db.merge(orm)  # FIXED: uses self._db
         self._db.flush()     # FIXED: uses self._db
@@ -51,8 +49,7 @@ class SqlAlchemyUserRepository(UserRepository):
             email=user.email,
             password_hash=user.password_hash,
             full_name=getattr(user, "full_name", None),
-            created_at=user.created_at, # Ensure created_at is passed if needed
-            provisioning_token=getattr(user, "provisioning_token", None),
+            created_at=user.created_at,
         )
         self._db.add(row)
         try:
@@ -100,26 +97,3 @@ class SqlAlchemyUserRepository(UserRepository):
         self._db.flush()
         return self._to_domain(updated_orm) if updated_orm else None
 
-    def get_by_provisioning_token(self, token: str) -> User | None:
-        row = (
-            self._db.query(UserORM)
-            .filter(UserORM.provisioning_token == token)
-            .one_or_none()
-        )
-        if row is None:
-            return None
-        return self._to_domain(row)
-
-    def set_provisioning_token(self, user_id: str, token: str) -> None:
-        row = self._db.get(UserORM, user_id)
-        if row is None:
-            raise ValueError(f"User {user_id} not found")
-        row.provisioning_token = token
-        self._db.commit()
-
-    def clear_provisioning_token(self, user_id: str) -> None:
-        row = self._db.get(UserORM, user_id)
-        if row is None:
-            raise ValueError(f"User {user_id} not found")
-        row.provisioning_token = None
-        self._db.commit()
