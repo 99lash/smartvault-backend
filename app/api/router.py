@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import access, activity, auth, devices, health, users, vaults
+from app.api.v1 import access, activity, auth, biometrics, devices, health, users, vaults
 from app.websocket import vault_socket
 
 from app.api.internal.router import internal_router
@@ -16,6 +16,7 @@ v1_router.include_router(health.router)
 v1_router.include_router(vaults.router)
 v1_router.include_router(users.router)
 v1_router.include_router(auth.router)
+v1_router.include_router(biometrics.router)
 v1_router.include_router(access.router)
 v1_router.include_router(activity.router)
 v1_router.include_router(devices.router)

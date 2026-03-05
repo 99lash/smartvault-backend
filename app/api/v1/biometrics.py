@@ -1,0 +1,191 @@
+from __future__ import annotations
+
+import asyncio
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
+
+from app.api.deps.auth import get_current_user_id
+from app.api.deps.common import get_db_session
+from app.api.deps.vaults import (
+    get_check_vault_access_uc,
+    get_list_user_vaults_uc,
+    get_send_unlock_command_uc,
+    get_vault_repo,
+    get_ws_manager,
+)
+from app.application.use_cases.enroll_biometrics import EnrollBiometrics, EnrollBiometricsInput
+from app.application.use_cases.list_user_vaults import ListUserVaults
+from app.application.use_cases.send_unlock_command import SendUnlockCommand, VaultOfflineError
+from app.domain.exceptions import InsufficientPermissionsError, UnauthorizedVaultAccessError
+from app.domain.value_objects.vault_role import VaultRole
+from app.domain.value_objects.websocket_messages import MessageType
+from app.infrastructure.db.models.biometric_enrollment_orm import BiometricEnrollmentORM
+from app.infrastructure.messaging.websocket_manager import WebSocketManager
+from app.infrastructure.notifications.push_service import push_service
+from app.schemas.biometrics import (
+    BiometricEnrollResponse,
+    BiometricVerifyRequest,
+    BiometricVerifyResponse,
+)
+from app.schemas.vaults import VaultAccessRoleEnum, VaultListItemResponse
+
+router = APIRouter(prefix="/biometrics", tags=["biometrics"])
+
+
+def _get_enroll_uc(db: Session = Depends(get_db_session)) -> EnrollBiometrics:
+    return EnrollBiometrics(db)
+
+
+def _vault_to_response(summary) -> VaultListItemResponse:
+    role_map = {
+        VaultRole.OWNER: VaultAccessRoleEnum.OWNER,
+        VaultRole.ADMIN: VaultAccessRoleEnum.ADMIN,
+        VaultRole.MEMBER: VaultAccessRoleEnum.MEMBER,
+        VaultRole.VIEWER: VaultAccessRoleEnum.VIEWER,
+    }
+    role = role_map.get(summary.role, VaultAccessRoleEnum.OWNER) if summary.role else VaultAccessRoleEnum.OWNER
+    return VaultListItemResponse(
+        vault_id=summary.vault.id,
+        name=summary.vault.vault_name,
+        status=summary.vault.status,
+        role=role,
+        last_seen_at=summary.vault.last_seen_at,
+    )
+
+
+@router.post("/enroll", response_model=BiometricEnrollResponse)
+async def enroll_biometric(
+    user_id: str = Depends(get_current_user_id),
+    uc: EnrollBiometrics = Depends(_get_enroll_uc),
+) -> BiometricEnrollResponse:
+    """Record biometric enrollment for the authenticated user."""
+    result = await run_in_threadpool(
+        uc.execute,
+        EnrollBiometricsInput(user_id=user_id),
+    )
+    return BiometricEnrollResponse(enrolled=result.enrolled, enrolled_at=result.enrolled_at)
+
+
+@router.post("/verify", response_model=BiometricVerifyResponse)
+async def verify_biometric(
+    payload: BiometricVerifyRequest,
+    jwt_user_id: str = Depends(get_current_user_id),
+    list_vaults_uc: ListUserVaults = Depends(get_list_user_vaults_uc),
+    unlock_uc: SendUnlockCommand = Depends(get_send_unlock_command_uc),
+    ws_manager: WebSocketManager = Depends(get_ws_manager),
+    db: Session = Depends(get_db_session),
+) -> BiometricVerifyResponse:
+    """
+    Validate biometric session:
+    1. JWT user must match claimed user_id
+    2. Returns user's vaults
+    3. If vault_id provided: verify ownership → send unlock signal → notify user
+    """
+    # Step 1: JWT ↔ body user_id must match
+    if payload.user_id != jwt_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="user_id does not match authenticated token",
+        )
+
+    # Step 2: Fetch user's vaults
+    result = await run_in_threadpool(list_vaults_uc.execute, jwt_user_id)
+    vaults = [_vault_to_response(s) for s in result.vaults]
+
+    # Step 3: Update last_used_at for audit
+    enrollment = (
+        db.query(BiometricEnrollmentORM)
+        .filter(BiometricEnrollmentORM.user_id == jwt_user_id)
+        .first()
+    )
+    if enrollment:
+        enrollment.last_used_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+        db.commit()
+
+    # Step 4: If vault_id provided, verify ownership + send unlock signal
+    unlock_sent: bool | None = None
+    vault_offline: bool | None = None
+
+    if payload.vault_id:
+        vault_id = payload.vault_id
+        try:
+            await unlock_uc.execute(vault_id=vault_id, user_id=jwt_user_id)
+            unlock_sent = True
+            vault_offline = False
+
+            # Notify the user via WebSocket (in-app) and push (background)
+            await ws_manager.send_to_user(
+                jwt_user_id,
+                {
+                    "type": MessageType.NOTIFICATION.value,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "payload": {
+                        "title": "Vault Unlocked",
+                        "message": f"Vault {vault_id} was unlocked via biometric authentication.",
+                        "severity": "success",
+                        "vault_id": vault_id,
+                    },
+                },
+            )
+            asyncio.create_task(
+                push_service.send_to_user(
+                    db, jwt_user_id,
+                    title="Vault Unlocked 🔓",
+                    body="Your vault was unlocked via biometric authentication.",
+                    data={"vault_id": vault_id, "event": "VAULT_UNLOCKED"},
+                )
+            )
+
+        except VaultOfflineError:
+            unlock_sent = False
+            vault_offline = True
+            # Notify user — vault was offline (WebSocket + push)
+            await ws_manager.send_to_user(
+                jwt_user_id,
+                {
+                    "type": MessageType.NOTIFICATION.value,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "payload": {
+                        "title": "Vault Offline",
+                        "message": f"Vault {vault_id} is offline. Unlock signal could not be sent.",
+                        "severity": "warning",
+                        "vault_id": vault_id,
+                    },
+                },
+            )
+            asyncio.create_task(
+                push_service.send_to_user(
+                    db, jwt_user_id,
+                    title="Vault Offline ⚠️",
+                    body="Your vault is offline. Unlock signal could not be sent.",
+                    data={"vault_id": vault_id, "event": "VAULT_OFFLINE"},
+                )
+            )
+
+        except UnauthorizedVaultAccessError:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this vault",
+            )
+
+        except InsufficientPermissionsError:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your role does not permit unlocking this vault",
+            )
+
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            )
+
+    return BiometricVerifyResponse(
+        success=True,
+        vaults=vaults,
+        unlock_sent=unlock_sent,
+        vault_offline=vault_offline,
+    )

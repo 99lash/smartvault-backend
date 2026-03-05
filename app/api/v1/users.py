@@ -1,16 +1,27 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import uuid
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.deps.common import get_db_session
 from app.api.deps.users import get_get_me_uc, get_update_me_uc, get_user_repo
 from app.api.deps.auth import get_current_user_id
 from app.application.ports.user_repository import UserRepository
 from app.application.use_cases.get_me import GetMe
 from app.application.use_cases.update_me import UpdateMe
-from app.schemas.users import UserResponse, UpdateMeRequest, UserSearchResult
+from app.infrastructure.db.models.device_token_orm import DeviceTokenORM
+from app.schemas.users import (
+    CreateUserRequest,
+    RegisterDeviceTokenRequest,
+    RegisterDeviceTokenResponse,
+    UpdateMeRequest,
+    UserResponse,
+    UserSearchResult,
+)
 from app.api.deps.users import get_create_user_uc
 from app.application.use_cases.create_user import CreateUser, CreateUserInput, DuplicateEmailError
-from app.schemas.users import CreateUserRequest, UserResponse
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -54,6 +65,29 @@ async def update_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse.model_validate(user)
+
+
+@router.post("/me/device-token", response_model=RegisterDeviceTokenResponse)
+async def register_device_token(
+    payload: RegisterDeviceTokenRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db_session),
+) -> RegisterDeviceTokenResponse:
+    """Register or update an Expo push token for the authenticated user."""
+    existing = db.query(DeviceTokenORM).filter(DeviceTokenORM.token == payload.token).first()
+    if existing:
+        # Token already registered — reassign to current user (device re-login)
+        existing.user_id = user_id  # type: ignore[assignment]
+        db.commit()
+    else:
+        db.add(DeviceTokenORM(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            token=payload.token,
+            platform=payload.platform,
+        ))
+        db.commit()
+    return RegisterDeviceTokenResponse(registered=True)
 
 
 @router.get("/search", response_model=UserSearchResult)

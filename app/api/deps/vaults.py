@@ -136,6 +136,10 @@ def get_activity_log_repo(db: Session = Depends(get_db_session)) -> SqlAlchemyAc
     return SqlAlchemyActivityLogRepository(db)
 
 
+def get_ws_manager() -> WebSocketManager:
+    return _ws_manager
+
+
 def get_provisioning_token_store() -> RedisProvisioningTokenStore:
     return _provisioning_token_store
 

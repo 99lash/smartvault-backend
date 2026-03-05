@@ -7,11 +7,16 @@ POST /devices/tamper     - firmware reports tamper detection
 """
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.api.deps.activity import get_log_activity_uc
+from app.api.deps.common import get_db_session
 from app.api.deps.vaults import get_register_device_uc, get_unlock_with_pin_uc, get_vault_repo
+from app.infrastructure.notifications.push_service import push_service
 from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.log_activity import LogActivity, LogActivityInput
 from app.application.use_cases.register_device import (
@@ -100,6 +105,7 @@ async def tamper_alert(
     payload: TamperAlertRequest,
     vault_repo: VaultRepository = Depends(get_vault_repo),
     log_activity: LogActivity = Depends(get_log_activity_uc),
+    db: Session = Depends(get_db_session),
 ) -> TamperAlertResponse:
     vault = await run_in_threadpool(vault_repo.get_by_hardware_uuid, payload.hardware_uuid)
     if vault is None:
@@ -115,4 +121,15 @@ async def tamper_alert(
             metadata={"hardware_uuid": payload.hardware_uuid},
         ),
     )
+
+    asyncio.create_task(
+        push_service.send_to_user(
+            db,
+            vault.owner_id,
+            title="Tamper Alert",
+            body="Tamper detected on your vault. Check immediately.",
+            data={"vault_id": str(vault.id), "event": "TAMPER_DETECTED"},
+        )
+    )
+
     return TamperAlertResponse(received=True)

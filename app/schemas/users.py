@@ -27,3 +27,12 @@ class UserSearchResult(BaseModel):
     full_name: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RegisterDeviceTokenRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=512)
+    platform: str = Field(pattern=r"^(ios|android)$")
+
+
+class RegisterDeviceTokenResponse(BaseModel):
+    registered: bool
