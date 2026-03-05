@@ -137,7 +137,7 @@ class SendUnlockCommand:
             )
 
         # Step 4: Verify vault is connected and can receive commands
-        if not await self._ws_manager.is_vault_online(vault_id):
+        if not self._ws_manager.is_vault_online(vault_id):
             raise VaultOfflineError(
                 f"Vault {vault_id} is offline. Commands can only be sent "
                 "to connected devices."

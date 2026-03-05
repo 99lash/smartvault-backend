@@ -7,7 +7,7 @@ class WebSocketManagerPort(ABC):
     """Port for sending commands to vault devices via WebSocket."""
 
     @abstractmethod
-    async def is_vault_online(self, vault_id: str) -> bool:
+    def is_vault_online(self, vault_id: str) -> bool:
         """
         Check if vault device is connected.
 

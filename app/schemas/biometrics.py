@@ -22,3 +22,13 @@ class BiometricVerifyResponse(BaseModel):
     vaults: list[VaultListItemResponse]
     unlock_sent: bool | None = None      # True if unlock command was dispatched
     vault_offline: bool | None = None    # True if vault was offline at verify time
+
+
+class FaceEnrollResponse(BaseModel):
+    enrolled: bool
+
+
+class FaceVerifyResponse(BaseModel):
+    success: bool
+    unlock_sent: bool | None = None
+    vault_offline: bool | None = None
