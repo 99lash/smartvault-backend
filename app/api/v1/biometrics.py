@@ -16,6 +16,7 @@ from app.api.deps.vaults import (
     get_vault_repo,
     get_ws_manager,
 )
+from app.application.use_cases.delete_face import DeleteFace, DeleteFaceInput
 from app.application.use_cases.enroll_biometrics import EnrollBiometrics, EnrollBiometricsInput
 from app.application.use_cases.enroll_face import EnrollFace, EnrollFaceInput
 from app.application.use_cases.list_user_vaults import ListUserVaults
@@ -36,6 +37,7 @@ from app.schemas.biometrics import (
     BiometricEnrollResponse,
     BiometricVerifyRequest,
     BiometricVerifyResponse,
+    FaceDeleteResponse,
     FaceEnrollResponse,
     FaceVerifyResponse,
 )
@@ -52,7 +54,6 @@ def _get_enroll_uc(db: Session = Depends(get_db_session)) -> EnrollBiometrics:
 
 def _vault_to_response(summary) -> VaultListItemResponse:
     role_map = {
-        VaultRole.OWNER: VaultAccessRoleEnum.OWNER,
         VaultRole.ADMIN: VaultAccessRoleEnum.ADMIN,
         VaultRole.MEMBER: VaultAccessRoleEnum.MEMBER,
         VaultRole.VIEWER: VaultAccessRoleEnum.VIEWER,
@@ -265,3 +266,14 @@ async def verify_face(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
     return FaceVerifyResponse(success=True, unlock_sent=unlock_sent, vault_offline=vault_offline)
+
+
+@router.delete("/face", response_model=FaceDeleteResponse)
+async def delete_face(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db_session),
+) -> FaceDeleteResponse:
+    """Delete the authenticated user's stored face encoding."""
+    uc = DeleteFace(db)
+    result = await run_in_threadpool(uc.execute, DeleteFaceInput(user_id=user_id))
+    return FaceDeleteResponse(deleted=result.deleted)

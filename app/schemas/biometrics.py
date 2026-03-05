@@ -32,3 +32,7 @@ class FaceVerifyResponse(BaseModel):
     success: bool
     unlock_sent: bool | None = None
     vault_offline: bool | None = None
+
+
+class FaceDeleteResponse(BaseModel):
+    deleted: bool
