@@ -14,9 +14,11 @@ from app.domain.exceptions import (
     PINNotSetError,
     VaultNotFoundError,
 )
+from app.application.ports.websocket_manager import WebSocketManagerPort
 from app.domain.models.vault import Vault
 from app.domain.value_objects.pin import PIN
 from app.domain.value_objects.pin_attempt_result import PINAttemptResult
+from app.domain.value_objects.websocket_messages import CommandAction
 from app.infrastructure.monitoring.helpers import (
     track_pin_lockout,
     track_vault_unlock,
@@ -44,11 +46,13 @@ class UnlockVaultWithPIN:
         hasher: PINHasher,
         tracker: PINAttemptTracker,
         log_activity: LogActivity | None = None,  # NEW: optional, won't break existing tests
+        ws_manager: WebSocketManagerPort | None = None,
     ) -> None:
         self._repo = repo
         self._hasher = hasher
         self._tracker = tracker
         self._log_activity = log_activity
+        self._ws_manager = ws_manager
 
     async def execute(self, inp: UnlockVaultWithPINInput) -> UnlockVaultWithPINResult:
         start = time.perf_counter()
@@ -135,6 +139,14 @@ class UnlockVaultWithPIN:
 
             await self._tracker.register_success(inp.vault_id)
             success = True
+
+            if self._ws_manager and self._ws_manager.is_vault_online(inp.vault_id):
+                try:
+                    await self._ws_manager.send_to_vault(
+                        inp.vault_id, {"action": CommandAction.UNLOCK.value}
+                    )
+                except Exception:
+                    pass  # vault offline or unreachable — PIN is still valid
 
             self._log(LogActivityInput(
                 vault_id=inp.vault_id,

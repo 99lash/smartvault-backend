@@ -36,6 +36,11 @@ class VaultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete(self, vault_id: str) -> None:
+        """Delete vault. DB cascades to vault_authorizations + access_logs."""
+        raise NotImplementedError
+
+    @abstractmethod
     def list_for_user(self, user_id: str) -> list[VaultAccessSummary]:
         """List vaults a user owns or has access to."""
         raise NotImplementedError

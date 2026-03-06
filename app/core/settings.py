@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str
+    VAULT_COMMAND_SECRET: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Email / SMTP

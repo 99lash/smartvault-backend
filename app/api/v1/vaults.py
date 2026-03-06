@@ -7,6 +7,7 @@ from app.api.deps.auth import get_current_user_id, get_rate_limiter
 from app.api.deps.users import get_current_user
 from app.api.deps.vaults import (
     get_check_vault_access_uc,
+    get_delete_vault_uc,
     get_generate_provisioning_token_uc,
     get_list_user_vaults_uc,
     get_remove_vault_pin_uc,
@@ -15,8 +16,11 @@ from app.api.deps.vaults import (
     get_set_vault_pin_uc,
     get_unlock_with_pin_uc,
     get_vault_repo,
+    get_ws_manager,
 )
+from app.infrastructure.messaging.websocket_manager import WebSocketManager
 from app.application.ports.vault_repository import VaultRepository
+from app.application.use_cases.delete_vault import DeleteVault, DeleteVaultInput
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.get_vault_status import GetVaultStatus, GetVaultStatusInput
 from app.application.use_cases.list_user_vaults import ListUserVaults
@@ -64,6 +68,7 @@ router = APIRouter(tags=["vaults"])
 def list_user_vaults(
     current_user_id: str = Depends(get_current_user_id),
     uc: ListUserVaults = Depends(get_list_user_vaults_uc),
+    ws_manager: WebSocketManager = Depends(get_ws_manager),
 ) -> list[VaultListItemResponse]:
     result = uc.execute(current_user_id)
 
@@ -81,6 +86,7 @@ def list_user_vaults(
                 status=summary.vault.status,
                 role=role,
                 last_seen_at=summary.vault.last_seen_at,
+                is_online=ws_manager.is_vault_online(summary.vault.id),
             )
         )
 
@@ -301,6 +307,26 @@ async def generate_provisioning_token(
 ) -> ProvisioningTokenResponse:
     token = await uc.execute(GenerateProvisioningTokenInput(user_id=current_user_id))
     return ProvisioningTokenResponse(provisioning_token=token)
+
+
+@router.delete("/vaults/{vault_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vault(
+    vault_id: str,
+    uc: DeleteVault = Depends(get_delete_vault_uc),
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
+    try:
+        await run_in_threadpool(
+            uc.execute,
+            DeleteVaultInput(vault_id=vault_id, requesting_user_id=current_user_id),
+        )
+    except VaultNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault not found")
+    except UnauthorizedVaultAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the vault owner can delete the vault",
+        )
 
 
 @router.post(

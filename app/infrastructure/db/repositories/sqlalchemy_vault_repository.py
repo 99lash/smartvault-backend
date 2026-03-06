@@ -116,6 +116,13 @@ class SqlAlchemyVaultRepository(VaultRepository):
 
         return self._to_domain(row)
 
+    def delete(self, vault_id: str) -> None:
+        row = self._session.get(VaultORM, vault_id)
+        if row is None:
+            raise ValueError(f"Vault {vault_id} not found")
+        self._session.delete(row)
+        self._session.commit()
+
     def list_for_user(self, user_id: str) -> list[VaultAccessSummary]:
         stmt = (
             select(VaultORM, VaultAuthorizationORM.role)

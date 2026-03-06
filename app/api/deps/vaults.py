@@ -7,6 +7,7 @@ from app.application.ports.pin_attempt_tracker import PINAttemptTracker
 from app.application.ports.pin_hasher import PINHasher
 from app.application.ports.vault_authorization_repository import VaultAuthorizationRepository
 from app.application.ports.vault_repository import VaultRepository
+from app.application.use_cases.delete_vault import DeleteVault
 from app.application.use_cases.add_vault_member import AddVaultMember
 from app.application.use_cases.check_vault_access import CheckVaultAccess
 from app.application.use_cases.list_vault_members import ListVaultMembers
@@ -29,13 +30,12 @@ from app.infrastructure.db.repositories.sqlalchemy_vault_authorization_repositor
 )
 from app.infrastructure.db.repositories.sqlalchemy_vault_repository import SqlAlchemyVaultRepository
 from app.infrastructure.cache.provisioning_token_store import RedisProvisioningTokenStore
-from app.infrastructure.messaging.websocket_manager import WebSocketManager
+from app.infrastructure.messaging.websocket_manager import WebSocketManager, manager as _ws_manager
 from app.infrastructure.security.pin_attempt_tracker import RedisPINAttemptTracker
 from app.infrastructure.security.pin_hasher import PBKDF2PINHasher
 
 _pin_hasher = PBKDF2PINHasher()
 _pin_attempt_tracker = RedisPINAttemptTracker()
-_ws_manager = WebSocketManager()
 _provisioning_token_store = RedisProvisioningTokenStore()
 
 
@@ -125,7 +125,7 @@ def get_unlock_with_pin_uc(
     tracker: PINAttemptTracker = Depends(get_pin_attempt_tracker),
     log_activity: LogActivity = Depends(get_log_activity_uc),  # NEW
 ) -> UnlockVaultWithPIN:
-    return UnlockVaultWithPIN(vault_repo, hasher, tracker, log_activity)
+    return UnlockVaultWithPIN(vault_repo, hasher, tracker, log_activity, _ws_manager)
 
 
 def get_user_repo(db: Session = Depends(get_db_session)) -> SqlAlchemyUserRepository:
@@ -163,3 +163,9 @@ def get_reset_vault_uc(
     log_repo=Depends(get_activity_log_repo),
 ) -> ResetVault:
     return ResetVault(vault_repo, log_repo, _ws_manager)
+
+
+def get_delete_vault_uc(
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+) -> DeleteVault:
+    return DeleteVault(vault_repo=vault_repo, ws_manager=_ws_manager)

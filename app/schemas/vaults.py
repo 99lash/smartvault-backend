@@ -31,6 +31,7 @@ class VaultListItemResponse(BaseModel):
     status: VaultStatus
     role: VaultAccessRoleEnum
     last_seen_at: datetime | None
+    is_online: bool = False
 
     model_config = ConfigDict(populate_by_name=True)
 

@@ -229,7 +229,7 @@ class WebSocketManager(WebSocketManagerPort):
         
         try:
             await self.vault_connections[vault_id].send_json(message)
-            logger.debug(f"Sent message to vault {vault_id}: {message['type']}")
+            logger.debug(f"Sent message to vault {vault_id}: {message.get('type', 'unknown')}")
         except Exception as e:
             logger.error(f"Failed to send to vault {vault_id}: {e}")
             # Mark vault as disconnected
