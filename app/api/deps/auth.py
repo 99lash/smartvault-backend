@@ -2,7 +2,7 @@ from app.core.settings import settings
 from redis import Redis
 from app.application.ports.email_service import EmailService
 from app.application.services.email_notification_service import EmailNotificationService
-from app.infrastructure.notifications.email_service import DevEmailService, SMTPEmailService
+from app.infrastructure.notifications.email_service import DevEmailService, EmailJSEmailService, ResendEmailService, SMTPEmailService
 from app.infrastructure.services.otp_ticket_service import OTPTicketService
 from app.infrastructure.services.password_reset_service import PasswordResetService
 from app.infrastructure.security.rate_limiter import RateLimiter
@@ -45,6 +45,33 @@ def _build_email_service() -> EmailService:
             from_email=from_email,
             from_name=settings.SMTP_FROM_NAME,
             use_tls=True,
+        )
+    elif backend == "emailjs":
+        missing = [
+            k for k, v in {
+                "EMAILJS_SERVICE_ID": settings.EMAILJS_SERVICE_ID,
+                "EMAILJS_TEMPLATE_ID": settings.EMAILJS_TEMPLATE_ID,
+                "EMAILJS_PUBLIC_KEY": settings.EMAILJS_PUBLIC_KEY,
+                "EMAILJS_PRIVATE_KEY": settings.EMAILJS_PRIVATE_KEY,
+            }.items() if not v
+        ]
+        if missing:
+            raise ValueError(f"Missing EmailJS config: {', '.join(missing)}")
+        base_service = EmailJSEmailService(
+            service_id=settings.EMAILJS_SERVICE_ID,
+            template_id=settings.EMAILJS_TEMPLATE_ID,
+            public_key=settings.EMAILJS_PUBLIC_KEY,
+            private_key=settings.EMAILJS_PRIVATE_KEY,
+            otp_ttl_seconds=settings.OTP_TTL_SECONDS,
+        )
+    elif backend == "resend":
+        if not settings.RESEND_API_KEY:
+            raise ValueError("RESEND_API_KEY must be set when EMAIL_BACKEND=resend")
+        base_service = ResendEmailService(
+            api_key=settings.RESEND_API_KEY,
+            from_email=settings.RESEND_FROM_EMAIL,
+            from_name=settings.RESEND_FROM_NAME,
+            otp_ttl_seconds=settings.OTP_TTL_SECONDS,
         )
     else:
         base_service = DevEmailService()

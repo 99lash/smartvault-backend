@@ -30,13 +30,24 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Email / SMTP
-    EMAIL_BACKEND: str | None = None  # "dev" or "smtp"
+    EMAIL_BACKEND: str | None = None  # "dev", "smtp", or "emailjs"
     SMTP_HOST: str | None = None
     SMTP_PORT: int | None = 587
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_FROM_EMAIL: str | None = None
     SMTP_FROM_NAME: str | None = None
+
+    # EmailJS
+    EMAILJS_SERVICE_ID: str | None = None
+    EMAILJS_TEMPLATE_ID: str | None = None
+    EMAILJS_PUBLIC_KEY: str | None = None
+    EMAILJS_PRIVATE_KEY: str | None = None
+
+    # Resend
+    RESEND_API_KEY: str | None = None
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+    RESEND_FROM_NAME: str = "SmartVault"
 
     # OTP + ticket
     OTP_TTL_SECONDS: int = 600          # 10 min

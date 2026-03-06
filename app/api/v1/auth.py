@@ -42,7 +42,13 @@ async def request_otp(
         window_seconds=60
     )
     result = await otp_svc.issue_otp(payload.email)
-    await email_svc.send_otp(payload.email, result.otp)
+    try:
+        await email_svc.send_otp(payload.email, result.otp)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to send OTP email. Please try again later.",
+        ) from exc
 
 @router.post("/verify-otp", response_model=OTPVerifyResponse)
 async def verify_otp(
