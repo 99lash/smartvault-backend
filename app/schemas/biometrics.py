@@ -36,3 +36,8 @@ class FaceVerifyResponse(BaseModel):
 
 class FaceDeleteResponse(BaseModel):
     deleted: bool
+
+
+class FaceStatusResponse(BaseModel):
+    enrolled: bool
+    updated_at: datetime | None = None

@@ -31,6 +31,7 @@ from app.domain.exceptions import InsufficientPermissionsError, UnauthorizedVaul
 from app.domain.value_objects.vault_role import VaultRole
 from app.domain.value_objects.websocket_messages import MessageType
 from app.infrastructure.db.models.biometric_enrollment_orm import BiometricEnrollmentORM
+from app.infrastructure.db.models.face_encoding_orm import FaceEncodingORM
 from app.infrastructure.messaging.websocket_manager import WebSocketManager
 from app.infrastructure.notifications.push_service import push_service
 from app.schemas.biometrics import (
@@ -39,6 +40,7 @@ from app.schemas.biometrics import (
     BiometricVerifyResponse,
     FaceDeleteResponse,
     FaceEnrollResponse,
+    FaceStatusResponse,
     FaceVerifyResponse,
 )
 from app.schemas.vaults import VaultAccessRoleEnum, VaultListItemResponse
@@ -221,6 +223,24 @@ async def enroll_face(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     return FaceEnrollResponse(enrolled=result.enrolled)
+
+
+@router.get("/face/status", response_model=FaceStatusResponse, status_code=status.HTTP_200_OK)
+async def face_status(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db_session),
+) -> FaceStatusResponse:
+    """Return whether the authenticated user currently has a stored face encoding."""
+    face_record = (
+        db.query(FaceEncodingORM)
+        .filter(FaceEncodingORM.user_id == user_id)
+        .first()
+    )
+
+    return FaceStatusResponse(
+        enrolled=face_record is not None,
+        updated_at=face_record.updated_at if face_record else None,
+    )
 
 
 @router.post("/verify-face", response_model=FaceVerifyResponse)
