@@ -1,9 +1,10 @@
 """
 Device-facing endpoints - called by firmware, no JWT auth.
 
-POST /devices/register   - firmware registers after captive portal
-POST /devices/verify-pin - firmware verifies keypad PIN entry
-POST /devices/tamper     - firmware reports tamper detection
+POST /devices/register    - firmware registers after captive portal
+POST /devices/verify-pin  - firmware verifies keypad PIN entry
+POST /devices/tamper      - firmware reports tamper detection
+POST /devices/deprovision - firmware deletes vault on reprovision
 """
 from __future__ import annotations
 
@@ -15,10 +16,16 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api.deps.activity import get_log_activity_uc
 from app.api.deps.common import get_db_session
-from app.api.deps.vaults import get_register_device_uc, get_unlock_with_pin_uc, get_vault_repo
+from app.api.deps.vaults import (
+    get_delete_vault_uc,
+    get_register_device_uc,
+    get_unlock_with_pin_uc,
+    get_vault_repo,
+)
 from app.infrastructure.notifications.push_service import push_service
 from app.application.ports.vault_repository import VaultRepository
 from app.application.use_cases.log_activity import LogActivity, LogActivityInput
+from app.application.use_cases.delete_vault import DeleteVault, DeleteVaultInput
 from app.application.use_cases.register_device import (
     HardwareAlreadyRegisteredError,
     InvalidProvisioningTokenError,
@@ -26,8 +33,16 @@ from app.application.use_cases.register_device import (
     RegisterDeviceInput,
 )
 from app.application.use_cases.unlock_vault_with_pin import UnlockVaultWithPIN, UnlockVaultWithPINInput
-from app.domain.exceptions import InvalidPINError, PINLockedOutError, PINNotSetError
+from app.domain.exceptions import (
+    InvalidPINError,
+    PINLockedOutError,
+    PINNotSetError,
+    UnauthorizedVaultAccessError,
+    VaultNotFoundError,
+)
 from app.schemas.vaults import (
+    DeprovisionDeviceRequest,
+    DeprovisionDeviceResponse,
     RegisterDeviceRequest,
     RegisterDeviceResponse,
     TamperAlertRequest,
@@ -133,3 +148,29 @@ async def tamper_alert(
     )
 
     return TamperAlertResponse(received=True)
+
+
+@router.post(
+    "/deprovision",
+    response_model=DeprovisionDeviceResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def deprovision_device(
+    payload: DeprovisionDeviceRequest,
+    vault_repo: VaultRepository = Depends(get_vault_repo),
+    uc: DeleteVault = Depends(get_delete_vault_uc),
+) -> DeprovisionDeviceResponse:
+    vault = await run_in_threadpool(vault_repo.get_by_hardware_uuid, payload.hardware_uuid)
+    if vault is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not registered")
+
+    try:
+        await run_in_threadpool(
+            uc.execute,
+            DeleteVaultInput(vault_id=vault.id, requesting_user_id=vault.owner_id),
+        )
+        return DeprovisionDeviceResponse(deprovisioned=True, vault_id=vault.id)
+    except VaultNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault not found")
+    except UnauthorizedVaultAccessError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to deprovision")

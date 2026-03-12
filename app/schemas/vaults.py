@@ -69,3 +69,12 @@ class TamperAlertRequest(BaseModel):
 
 class TamperAlertResponse(BaseModel):
     received: bool
+
+
+class DeprovisionDeviceRequest(BaseModel):
+    hardware_uuid: str
+
+
+class DeprovisionDeviceResponse(BaseModel):
+    deprovisioned: bool
+    vault_id: str
