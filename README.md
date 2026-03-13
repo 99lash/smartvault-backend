@@ -1,5 +1,8 @@
 # SmartVault Backend API
 
+[`download mobile`](https://expo.dev/artifacts/eas/dNneqia7Xc1XeHK8CxYNzi.apk)
+---
+
 Backend API for SmartVault — a secure vault management system with PIN-based unlocking, biometric authentication, and real-time WebSocket communication.
 
 Built with **FastAPI**, **PostgreSQL**, **Redis**, and **Docker** using **Clean Architecture** principles.
