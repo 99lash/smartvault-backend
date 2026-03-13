@@ -1,6 +1,9 @@
 # SmartVault Backend API
 
 [`download mobile`](https://expo.dev/artifacts/eas/dNneqia7Xc1XeHK8CxYNzi.apk)
+
+[`web link`](https://smrtvlt-web-app.vercel.app/)
+
 ---
 
 Backend API for SmartVault — a secure vault management system with PIN-based unlocking, biometric authentication, and real-time WebSocket communication.
