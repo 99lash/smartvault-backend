@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from app.api.deps.db import get_db
 from app.api.deps.users import get_create_user_uc, get_authenticate_user_uc
 from app.api.deps.auth import (
     get_email_service, get_otp_ticket_service, get_rate_limiter, get_token_service,
@@ -168,11 +170,13 @@ async def request_password_reset(
 async def confirm_password_reset(
     payload: PasswordResetConfirm,
     uc: ConfirmPasswordReset = Depends(get_confirm_password_reset_uc),
+    db: Session = Depends(get_db),
 ) -> None:
     try:
         await uc.execute(ConfirmPasswordResetInput(
             token=payload.token,
             new_password=payload.new_password,
         ))
+        db.commit()
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
