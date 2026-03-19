@@ -43,9 +43,14 @@ def get_instrumentator() -> Instrumentator:
 async def lifespan(app: FastAPI):
     setup_logging()
 
+    logger.info("lifespan_startup_begin")
+    logger.info("redis_startup_starting")
     await redis_startup()
+    logger.info("redis_startup_complete")
+    logger.info("websocket_manager_starting")
     await manager.start()
     logger.info("websocket_manager_started")
+    logger.info("application_startup_complete")
 
     yield
 

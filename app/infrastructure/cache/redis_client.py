@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
+from urllib.parse import urlparse
+
 from redis.asyncio import Redis
+
+from app.core.logging import get_logger
 from app.core.settings import settings
+
+logger = get_logger(__name__)
 
 _redis: Redis | None = None
 
@@ -12,6 +19,19 @@ def _redis_url() -> str:
     return str(settings.REDIS_URL)
 
 
+def _redacted_redis_url() -> str:
+    try:
+        parsed = urlparse(_redis_url())
+        scheme = parsed.scheme or "redis"
+        host = parsed.hostname or ""
+        port = parsed.port
+        if port:
+            return f"{scheme}://{host}:{port}"
+        return f"{scheme}://{host}"
+    except Exception:
+        return "redis://[redacted]"
+
+
 async def get_redis() -> Redis:
     """
     Dependency provider for FastAPI.
@@ -19,7 +39,14 @@ async def get_redis() -> Redis:
     """
     global _redis
     if _redis is None:
-        _redis = Redis.from_url(_redis_url(), decode_responses=False)
+        _redis = Redis.from_url(
+            _redis_url(),
+            decode_responses=False,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30,
+        )
     return _redis
 
 
@@ -27,8 +54,22 @@ async def redis_startup() -> None:
     """
     Connect/ping early so the app fails fast if Redis is unavailable.
     """
+    logger.info("redis_startup_begin", url=_redacted_redis_url())
     r = await get_redis()
-    await r.ping()
+    try:
+        await asyncio.wait_for(r.ping(), timeout=5.0)
+        logger.info("redis_ping_success")
+    except asyncio.TimeoutError:
+        logger.error("redis_ping_timeout", url=_redacted_redis_url())
+        raise
+    except Exception as exc:
+        logger.error(
+            "redis_ping_failed",
+            url=_redacted_redis_url(),
+            error=str(exc),
+            error_type=type(exc).__name__,
+        )
+        raise
 
 
 async def redis_shutdown() -> None:
